@@ -9,6 +9,7 @@ const UNITS = ['each', 'bottle', 'box', 'case', 'gallon', 'liter', 'kg', 'lb']
 export default function AddItem() {
   const [scanStatus, setScanStatus] = useState('idle') // 'idle' | 'scanning' | 'done'
   const [lookingUp, setLookingUp] = useState(false)
+  const [testCode, setTestCode] = useState('')
   const [form, setForm] = useState({
     name: '',
     sku: '',
@@ -53,14 +54,14 @@ export default function AddItem() {
           setScanStatus('done')
           setForm((prev) => ({ ...prev, sku: code }))
 
-          // Look up product name from UPC
+          // Look up product name from Open Food Facts
           setLookingUp(true)
           try {
             const res = await fetch(
-              `https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(code)}`
+              `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`
             )
             const data = await res.json()
-            const title = data?.items?.[0]?.title
+            const title = data?.product?.product_name
             if (title) {
               setForm((prev) => ({ ...prev, name: title }))
             }
@@ -87,6 +88,47 @@ export default function AddItem() {
   function handleScanAgain() {
     setForm((prev) => ({ ...prev, sku: '', name: '' }))
     startScan()
+  }
+
+  async function handleTestLookup() {
+    const code = testCode.trim()
+    if (!code) return
+
+    console.group(`[UPC Test] Lookup for: ${code}`)
+    console.log('1. Setting sku field →', code)
+    setScanStatus('done')
+    setForm((prev) => ({ ...prev, sku: code, name: '' }))
+    setLookingUp(true)
+
+    const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`
+    console.log('2. Fetching →', url)
+
+    try {
+      const res = await fetch(url)
+      console.log('3. HTTP status →', res.status, res.statusText)
+
+      const data = await res.json()
+      console.log('4. Raw response →', data)
+
+      const product = data?.product
+      if (product) {
+        console.log('5. Product object →', product)
+        const title = product.product_name
+        if (title) {
+          console.log('6. Setting name field →', title)
+          setForm((prev) => ({ ...prev, name: title }))
+        } else {
+          console.warn('6. Product found but product_name is empty — leaving name blank')
+        }
+      } else {
+        console.warn('5. No product returned (status:', data?.status, ')— leaving name blank')
+      }
+    } catch (err) {
+      console.error('3. Fetch failed →', err)
+    } finally {
+      setLookingUp(false)
+      console.groupEnd()
+    }
   }
 
   function handleChange(e) {
@@ -197,6 +239,31 @@ export default function AddItem() {
         <div className={styles.orDivider}>
           <span>or enter manually</span>
         </div>
+
+        {import.meta.env.DEV && (
+          <div className={styles.devPanel}>
+            <p className={styles.devLabel}>DEV — Test API lookup</p>
+            <div className={styles.devRow}>
+              <input
+                className={styles.devInput}
+                type="text"
+                placeholder="Enter UPC (e.g. 012345678905)"
+                value={testCode}
+                onChange={(e) => setTestCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleTestLookup()}
+              />
+              <button
+                type="button"
+                className={styles.devBtn}
+                onClick={handleTestLookup}
+                disabled={!testCode.trim() || lookingUp}
+              >
+                {lookingUp ? 'Looking up…' : 'Test'}
+              </button>
+            </div>
+            <p className={styles.devHint}>Results logged to console. Opens in &quot;done&quot; state.</p>
+          </div>
+        )}
       </section>
 
       {/* Manual Entry Form */}
