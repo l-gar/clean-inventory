@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: '/clean-inventory/',
   plugins: [
     react(),
     VitePWA({
@@ -15,8 +16,8 @@ export default defineConfig({
         theme_color: '#16a34a',
         background_color: '#f0fdf4',
         display: 'standalone',
-        scope: '/',
-        start_url: '/',
+        scope: '/clean-inventory/',
+        start_url: '/clean-inventory/',
         icons: [
           {
             src: 'pwa-192x192.png',
