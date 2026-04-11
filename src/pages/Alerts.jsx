@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import styles from './Alerts.module.css'
 
 const ALERTS = [
@@ -59,24 +60,25 @@ const TYPE_CONFIG = {
 }
 
 export default function Alerts() {
+  const { t } = useTranslation()
   const outCount = ALERTS.filter((a) => a.type === 'out').length
   const lowCount = ALERTS.filter((a) => a.type === 'low').length
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>Alerts</h1>
-        <p className={styles.subtitle}>Items that need attention</p>
+        <h1 className={styles.title}>{t('alerts.title')}</h1>
+        <p className={styles.subtitle}>{t('alerts.subtitle')}</p>
       </div>
 
       <div className={styles.summary}>
         <div className={`${styles.summaryCard} ${styles.summaryOut}`}>
           <span className={styles.summaryNum}>{outCount}</span>
-          <span className={styles.summaryLabel}>Out of Stock</span>
+          <span className={styles.summaryLabel}>{t('alerts.outOfStock')}</span>
         </div>
         <div className={`${styles.summaryCard} ${styles.summaryLow}`}>
           <span className={styles.summaryNum}>{lowCount}</span>
-          <span className={styles.summaryLabel}>Low Stock</span>
+          <span className={styles.summaryLabel}>{t('alerts.lowStock')}</span>
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function Alerts() {
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            <p>All items are well stocked</p>
+            <p>{t('alerts.emptyHint')}</p>
           </div>
         ) : (
           ALERTS.map((alert) => {

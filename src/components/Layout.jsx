@@ -1,10 +1,11 @@
 import { Outlet, NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import styles from './Layout.module.css'
 
 const navItems = [
   {
     to: '/add',
-    label: 'Add Item',
+    labelKey: 'nav.addItem',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
@@ -15,7 +16,7 @@ const navItems = [
   },
   {
     to: '/inventory',
-    label: 'Inventory',
+    labelKey: 'nav.inventory',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -26,7 +27,7 @@ const navItems = [
   },
   {
     to: '/alerts',
-    label: 'Alerts',
+    labelKey: 'nav.alerts',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -37,7 +38,7 @@ const navItems = [
   },
   {
     to: '/settings',
-    label: 'Settings',
+    labelKey: 'nav.settings',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
@@ -48,6 +49,7 @@ const navItems = [
 ]
 
 export default function Layout() {
+  const { t } = useTranslation()
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
@@ -69,7 +71,7 @@ export default function Layout() {
       </main>
 
       <nav className={styles.bottomNav}>
-        {navItems.map(({ to, label, icon, badge }) => (
+        {navItems.map(({ to, labelKey, icon, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -81,7 +83,7 @@ export default function Layout() {
               {icon}
               {badge && <span className={styles.badge}>{badge}</span>}
             </span>
-            <span className={styles.navLabel}>{label}</span>
+            <span className={styles.navLabel}>{t(labelKey)}</span>
           </NavLink>
         ))}
       </nav>

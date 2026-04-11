@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import styles from './InventoryList.module.css'
 
 const LOCATIONS = ['All', 'Truck 1', 'Truck 2', 'Warehouse', 'Office', 'Site A', 'Site B']
@@ -15,12 +16,14 @@ const SAMPLE_ITEMS = [
 ]
 
 function StatusBadge({ quantity, minQuantity }) {
-  if (quantity === 0) return <span className={`${styles.badge} ${styles.badgeOut}`}>Out</span>
-  if (quantity <= minQuantity) return <span className={`${styles.badge} ${styles.badgeLow}`}>Low</span>
-  return <span className={`${styles.badge} ${styles.badgeOk}`}>OK</span>
+  const { t } = useTranslation()
+  if (quantity === 0) return <span className={`${styles.badge} ${styles.badgeOut}`}>{t('inventory.badgeOut')}</span>
+  if (quantity <= minQuantity) return <span className={`${styles.badge} ${styles.badgeLow}`}>{t('inventory.badgeLow')}</span>
+  return <span className={`${styles.badge} ${styles.badgeOk}`}>{t('inventory.badgeOk')}</span>
 }
 
 export default function InventoryList() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [location, setLocation] = useState('All')
 
@@ -35,8 +38,8 @@ export default function InventoryList() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>Inventory</h1>
-        <span className={styles.count}>{filtered.length} items</span>
+        <h1 className={styles.title}>{t('inventory.title')}</h1>
+        <span className={styles.count}>{t('inventory.itemCount', { count: filtered.length })}</span>
       </div>
 
       <div className={styles.filters}>
@@ -48,7 +51,7 @@ export default function InventoryList() {
           <input
             className={styles.searchInput}
             type="search"
-            placeholder="Search items or SKU…"
+            placeholder={t('inventory.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -61,7 +64,7 @@ export default function InventoryList() {
               className={`${styles.locationTab} ${location === loc ? styles.locationTabActive : ''}`}
               onClick={() => setLocation(loc)}
             >
-              {loc}
+              {loc === 'All' ? t('inventory.filterAll') : loc}
             </button>
           ))}
         </div>
@@ -73,7 +76,7 @@ export default function InventoryList() {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
             </svg>
-            <p>No items found</p>
+            <p>{t('inventory.empty')}</p>
           </div>
         ) : (
           filtered.map((item) => (

@@ -1,0 +1,102 @@
+{
+  "add_item": "Agregar Artículo",
+  "add_item_subtitle": "Escanea un código de barras o llena los detalles",
+  "tap_to_scan": "Toca para escanear",
+  "point_camera_at_barcode": "Apunta la cámara al código de barras",
+  "looking_up_product": "Buscando producto…",
+  "start_camera_scan": "Iniciar Cámara",
+  "stop_scanning": "Detener Escaneo",
+  "scan_again": "Escanear de nuevo",
+  "or_enter_manually": "o ingresa manualmente",
+  "dev_test_panel": "DEV — Prueba de API",
+  "dev_enter_upc": "Ingresa UPC (ej. 012345678905)",
+  "dev_looking_up": "Buscando…",
+  "dev_test_btn": "Probar",
+  "dev_hint": "Resultados en consola. Abre en estado \"listo\".",
+  "item_details": "Detalles del Artículo",
+  "item_name": "Nombre del Artículo",
+  "item_name_placeholder": "ej. Limpiador Multiusos",
+  "sku_barcode": "SKU / Código de Barras",
+  "sku_placeholder": "ej. LMP-001",
+  "category": "Categoría",
+  "location": "Ubicación",
+  "select_placeholder": "Seleccionar…",
+  "quantity": "Cantidad",
+  "current_qty": "Cantidad Actual",
+  "unit": "Unidad",
+  "alert_below": "Alerta Debajo De",
+  "notes": "Notas",
+  "additional_notes": "Notas adicionales",
+  "notes_placeholder": "Instrucciones de almacenamiento, proveedor…",
+  "clear": "Limpiar",
+  "save_item": "Guardar Artículo",
+  "item_saved": "Artículo \"{{name}}\" guardado (backend no conectado aún)",
+  "nav": {
+    "inventory": "Inventario",
+    "addItem": "Agregar",
+    "alerts": "Alertas",
+    "settings": "Ajustes"
+  },
+  "inventory": {
+    "title": "Inventario",
+    "subtitle": "Todos los artículos en todas las ubicaciones",
+    "searchPlaceholder": "Buscar artículos o SKU…",
+    "filterAll": "Todos",
+    "itemCount": "{{count}} artículos",
+    "empty": "No se encontraron artículos",
+    "emptyHint": "Agrega tu primer artículo para comenzar",
+    "lowStock": "Stock Bajo",
+    "outOfStock": "Sin Stock",
+    "badgeOk": "OK",
+    "badgeLow": "Bajo",
+    "badgeOut": "Agotado"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "subtitle": "Artículos que necesitan tu atención",
+    "empty": "Sin alertas",
+    "emptyHint": "Todos los artículos tienen suficiente stock",
+    "lowStock": "Stock Bajo",
+    "outOfStock": "Sin Stock"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "subtitle": "Configura tus preferencias",
+    "sections": {
+      "business": "Negocio",
+      "alerts": "Alertas",
+      "display": "Pantalla",
+      "language": "Idioma",
+      "data": "Datos"
+    },
+    "business": {
+      "businessName": "Nombre del Negocio",
+      "defaultLocation": "Ubicación Predeterminada",
+      "defaultLocationDesc": "Preseleccionada al agregar artículos"
+    },
+    "alerts": {
+      "lowStock": "Alertas de Stock Bajo",
+      "lowStockDesc": "Notificar cuando los artículos estén por debajo del mínimo",
+      "outOfStock": "Alertas Sin Stock",
+      "outOfStockDesc": "Notificar cuando los artículos lleguen a cero",
+      "threshold": "Umbral de Stock Bajo",
+      "thresholdDesc": "Advertir cuando la cantidad esté en o por debajo de este %"
+    },
+    "display": {
+      "darkMode": "Modo Oscuro",
+      "darkModeDesc": "Cambia a esquema de colores oscuro",
+      "compactView": "Vista Compacta",
+      "compactViewDesc": "Mostrar más artículos en pantalla"
+    },
+    "language": {
+      "label": "Idioma",
+      "desc": "Cambiar el idioma de la app",
+      "en": "English",
+      "es": "Español"
+    },
+    "data": {
+      "exportCsv": "Exportar Inventario (CSV)",
+      "clearAll": "Borrar Todo el Inventario"
+    }
+  }
+}

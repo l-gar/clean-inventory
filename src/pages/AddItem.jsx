@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
 import styles from './AddItem.module.css'
 
@@ -7,6 +8,7 @@ const CATEGORIES = ['Chemicals', 'Equipment', 'PPE', 'Consumables', 'Tools']
 const UNITS = ['each', 'bottle', 'box', 'case', 'gallon', 'liter', 'kg', 'lb']
 
 export default function AddItem() {
+  const { t } = useTranslation()
   const [scanStatus, setScanStatus] = useState('idle') // 'idle' | 'scanning' | 'done'
   const [lookingUp, setLookingUp] = useState(false)
   const [testCode, setTestCode] = useState('')
@@ -138,7 +140,7 @@ export default function AddItem() {
   function handleSubmit(e) {
     e.preventDefault()
     // TODO: save to backend
-    alert(`Item "${form.name}" saved (backend not connected yet)`)
+    alert(t('item_saved', { name: form.name }))
   }
 
   const scanning = scanStatus === 'scanning'
@@ -147,8 +149,8 @@ export default function AddItem() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>Add Item</h1>
-        <p className={styles.subtitle}>Scan a barcode or fill in the details below</p>
+        <h1 className={styles.title}>{t('add_item')}</h1>
+        <p className={styles.subtitle}>{t('add_item_subtitle')}</p>
       </div>
 
       {/* Barcode Scanner Section */}
@@ -172,7 +174,7 @@ export default function AddItem() {
                 <div className={styles.scanCorner} data-pos="tr" />
                 <div className={styles.scanCorner} data-pos="bl" />
                 <div className={styles.scanCorner} data-pos="br" />
-                <p className={styles.scanHint}>Point camera at barcode</p>
+                <p className={styles.scanHint}>{t('point_camera_at_barcode')}</p>
               </>
             )}
 
@@ -188,7 +190,7 @@ export default function AddItem() {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <span className={styles.scanSuccessCode}>{form.sku}</span>
-                {lookingUp && <span className={styles.scanLookup}>Looking up product…</span>}
+                {lookingUp && <span className={styles.scanLookup}>{t('looking_up_product')}</span>}
               </div>
             )}
 
@@ -210,7 +212,7 @@ export default function AddItem() {
                   <line x1="13" y1="9" x2="13" y2="15" />
                   <line x1="16" y1="12" x2="16" y2="12.01" strokeWidth={3} />
                 </svg>
-                <span>Tap to scan barcode</span>
+                <span>{t('tap_to_scan')}</span>
               </div>
             )}
           </div>
@@ -221,33 +223,33 @@ export default function AddItem() {
               className={`${styles.scanBtn} ${styles.scanBtnStop}`}
               onClick={stopScan}
             >
-              Stop Scanning
+              {t('stop_scanning')}
             </button>
           )}
           {done && (
             <button type="button" className={styles.scanBtn} onClick={handleScanAgain}>
-              Scan Again
+              {t('scan_again')}
             </button>
           )}
           {!scanning && !done && (
             <button type="button" className={styles.scanBtn} onClick={startScan}>
-              Start Camera Scan
+              {t('start_camera_scan')}
             </button>
           )}
         </div>
 
         <div className={styles.orDivider}>
-          <span>or enter manually</span>
+          <span>{t('or_enter_manually')}</span>
         </div>
 
         {import.meta.env.DEV && (
           <div className={styles.devPanel}>
-            <p className={styles.devLabel}>DEV — Test API lookup</p>
+            <p className={styles.devLabel}>{t('dev_test_panel')}</p>
             <div className={styles.devRow}>
               <input
                 className={styles.devInput}
                 type="text"
-                placeholder="Enter UPC (e.g. 012345678905)"
+                placeholder={t('dev_enter_upc')}
                 value={testCode}
                 onChange={(e) => setTestCode(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleTestLookup()}
@@ -258,10 +260,10 @@ export default function AddItem() {
                 onClick={handleTestLookup}
                 disabled={!testCode.trim() || lookingUp}
               >
-                {lookingUp ? 'Looking up…' : 'Test'}
+                {lookingUp ? t('dev_looking_up') : t('dev_test_btn')}
               </button>
             </div>
-            <p className={styles.devHint}>Results logged to console. Opens in &quot;done&quot; state.</p>
+            <p className={styles.devHint}>{t('dev_hint')}</p>
           </div>
         )}
       </section>
@@ -269,18 +271,18 @@ export default function AddItem() {
       {/* Manual Entry Form */}
       <form className={styles.form} onSubmit={handleSubmit}>
         <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>Item Details</h2>
+          <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="name">
-              Item Name <span className={styles.required}>*</span>
+              {t('item_name')} <span className={styles.required}>*</span>
             </label>
             <input
               id="name"
               name="name"
               type="text"
               className={styles.input}
-              placeholder="e.g. All-Purpose Cleaner"
+              placeholder={t('item_name_placeholder')}
               value={form.name}
               onChange={handleChange}
               required
@@ -289,14 +291,14 @@ export default function AddItem() {
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="sku">
-              SKU / Barcode
+              {t('sku_barcode')}
             </label>
             <input
               id="sku"
               name="sku"
               type="text"
               className={styles.input}
-              placeholder="e.g. CLN-001"
+              placeholder={t('sku_placeholder')}
               value={form.sku}
               onChange={handleChange}
             />
@@ -305,7 +307,7 @@ export default function AddItem() {
           <div className={styles.fieldRow}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="category">
-                Category
+                {t('category')}
               </label>
               <select
                 id="category"
@@ -314,7 +316,7 @@ export default function AddItem() {
                 value={form.category}
                 onChange={handleChange}
               >
-                <option value="">Select…</option>
+                <option value="">{t('select_placeholder')}</option>
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -323,7 +325,7 @@ export default function AddItem() {
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="location">
-                Location <span className={styles.required}>*</span>
+                {t('location')} <span className={styles.required}>*</span>
               </label>
               <select
                 id="location"
@@ -333,7 +335,7 @@ export default function AddItem() {
                 onChange={handleChange}
                 required
               >
-                <option value="">Select…</option>
+                <option value="">{t('select_placeholder')}</option>
                 {LOCATIONS.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
@@ -343,12 +345,12 @@ export default function AddItem() {
         </section>
 
         <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>Quantity</h2>
+          <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
 
           <div className={styles.fieldRow}>
             <div className={styles.field} style={{ flex: 2 }}>
               <label className={styles.label} htmlFor="quantity">
-                Current Qty <span className={styles.required}>*</span>
+                {t('current_qty')} <span className={styles.required}>*</span>
               </label>
               <input
                 id="quantity"
@@ -365,7 +367,7 @@ export default function AddItem() {
 
             <div className={styles.field} style={{ flex: 1 }}>
               <label className={styles.label} htmlFor="unit">
-                Unit
+                {t('unit')}
               </label>
               <select
                 id="unit"
@@ -382,7 +384,7 @@ export default function AddItem() {
 
             <div className={styles.field} style={{ flex: 2 }}>
               <label className={styles.label} htmlFor="minQuantity">
-                Alert Below
+                {t('alert_below')}
               </label>
               <input
                 id="minQuantity"
@@ -399,16 +401,16 @@ export default function AddItem() {
         </section>
 
         <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>Notes</h2>
+          <h2 className={styles.sectionTitle}>{t('notes')}</h2>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="notes">
-              Additional notes
+              {t('additional_notes')}
             </label>
             <textarea
               id="notes"
               name="notes"
               className={styles.textarea}
-              placeholder="Storage instructions, supplier info…"
+              placeholder={t('notes_placeholder')}
               rows={3}
               value={form.notes}
               onChange={handleChange}
@@ -433,10 +435,10 @@ export default function AddItem() {
               })
             }
           >
-            Clear
+            {t('clear')}
           </button>
           <button type="submit" className={styles.btnPrimary}>
-            Save Item
+            {t('save_item')}
           </button>
         </div>
       </form>

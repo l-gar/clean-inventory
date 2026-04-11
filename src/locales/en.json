@@ -1,0 +1,102 @@
+{
+  "add_item": "Add Item",
+  "add_item_subtitle": "Scan a barcode or fill in the details below",
+  "tap_to_scan": "Tap to scan barcode",
+  "point_camera_at_barcode": "Point camera at barcode",
+  "looking_up_product": "Looking up product…",
+  "start_camera_scan": "Start Camera Scan",
+  "stop_scanning": "Stop Scanning",
+  "scan_again": "Scan Again",
+  "or_enter_manually": "or enter manually",
+  "dev_test_panel": "DEV — Test API lookup",
+  "dev_enter_upc": "Enter UPC (e.g. 012345678905)",
+  "dev_looking_up": "Looking up…",
+  "dev_test_btn": "Test",
+  "dev_hint": "Results logged to console. Opens in \"done\" state.",
+  "item_details": "Item Details",
+  "item_name": "Item Name",
+  "item_name_placeholder": "e.g. All-Purpose Cleaner",
+  "sku_barcode": "SKU / Barcode",
+  "sku_placeholder": "e.g. CLN-001",
+  "category": "Category",
+  "location": "Location",
+  "select_placeholder": "Select…",
+  "quantity": "Quantity",
+  "current_qty": "Current Qty",
+  "unit": "Unit",
+  "alert_below": "Alert Below",
+  "notes": "Notes",
+  "additional_notes": "Additional notes",
+  "notes_placeholder": "Storage instructions, supplier info…",
+  "clear": "Clear",
+  "save_item": "Save Item",
+  "item_saved": "Item \"{{name}}\" saved (backend not connected yet)",
+  "nav": {
+    "inventory": "Inventory",
+    "addItem": "Add Item",
+    "alerts": "Alerts",
+    "settings": "Settings"
+  },
+  "inventory": {
+    "title": "Inventory",
+    "subtitle": "All items across all locations",
+    "searchPlaceholder": "Search items or SKU…",
+    "filterAll": "All",
+    "itemCount": "{{count}} items",
+    "empty": "No items found",
+    "emptyHint": "Add your first item to get started",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock",
+    "badgeOk": "OK",
+    "badgeLow": "Low",
+    "badgeOut": "Out"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "subtitle": "Items that need your attention",
+    "empty": "No alerts",
+    "emptyHint": "All items are sufficiently stocked",
+    "lowStock": "Low Stock",
+    "outOfStock": "Out of Stock"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Configure your preferences",
+    "sections": {
+      "business": "Business",
+      "alerts": "Alerts",
+      "display": "Display",
+      "language": "Language",
+      "data": "Data"
+    },
+    "business": {
+      "businessName": "Business Name",
+      "defaultLocation": "Default Location",
+      "defaultLocationDesc": "Pre-selected when adding items"
+    },
+    "alerts": {
+      "lowStock": "Low Stock Alerts",
+      "lowStockDesc": "Notify when items fall below minimum",
+      "outOfStock": "Out of Stock Alerts",
+      "outOfStockDesc": "Notify when items reach zero",
+      "threshold": "Low Stock Threshold",
+      "thresholdDesc": "Warn when quantity is at or below this %"
+    },
+    "display": {
+      "darkMode": "Dark Mode",
+      "darkModeDesc": "Switch app to dark color scheme",
+      "compactView": "Compact View",
+      "compactViewDesc": "Show more items on screen"
+    },
+    "language": {
+      "label": "Language",
+      "desc": "Switch app language",
+      "en": "English",
+      "es": "Español"
+    },
+    "data": {
+      "exportCsv": "Export Inventory (CSV)",
+      "clearAll": "Clear All Inventory"
+    }
+  }
+}

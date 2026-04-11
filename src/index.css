@@ -35,6 +35,11 @@
 
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
+  /* Semantic color tokens — override these in html.dark */
+  --color-page:    var(--green-50);
+  --color-surface: #ffffff;
+  --color-border:  var(--gray-200);
+
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
@@ -42,6 +47,41 @@
   background-color: var(--green-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Dark mode ────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+  background-color: #0d1f13;
+  color: #d1fae5;
+
+  --color-page:    #0d1f13;
+  --color-surface: #162b1c;
+  --color-border:  #2d4a38;
+
+  /* Green palette */
+  --green-50:  #0d1f13;
+  --green-100: #1a3423;
+  --green-800: #4ade80;
+
+  /* Gray palette — text and surface roles only, never backgrounds that must stay dark */
+  --gray-50:  #111e16;
+  --gray-100: #1a2e20;
+  --gray-200: #2d4a38;
+  --gray-300: #4b6055;
+  --gray-400: #6b8a77;
+  --gray-500: #8aaa96;
+  --gray-800: #d1fae5;
+
+  /* Status palette — tinted dark surfaces */
+  --red-50:   #2c1515;
+  --amber-50: #2c2010;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3 {
+  color: #d1fae5;
 }
 
 html {

@@ -5,7 +5,7 @@
 
 .pageHeader {
   padding: 20px 16px 12px;
-  background: white;
+  background: var(--color-surface);
   border-bottom: 1px solid var(--gray-200);
 }
 
@@ -44,7 +44,7 @@
 }
 
 .card {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--gray-200);
   border-radius: 12px;
   overflow: hidden;
@@ -127,6 +127,7 @@
   padding: 7px 10px;
   font-size: 0.9rem;
   color: var(--gray-800);
+  background: var(--color-surface);
   outline: none;
   width: 160px;
   text-align: right;
@@ -143,7 +144,7 @@
   font-size: 0.9rem;
   color: var(--gray-800);
   outline: none;
-  background: white;
+  background: var(--color-surface);
 }
 
 .selectInput:focus {
@@ -162,6 +163,7 @@
   padding: 7px 8px;
   font-size: 0.9rem;
   color: var(--gray-800);
+  background: var(--color-surface);
   width: 60px;
   text-align: center;
   outline: none;
