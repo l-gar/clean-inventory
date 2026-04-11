@@ -1,0 +1,224 @@
+.page {
+  padding-bottom: 32px;
+  min-height: 100%;
+}
+
+.pageHeader {
+  padding: 20px 16px 12px;
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--green-800);
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+.sections {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--green-600);
+  padding-left: 4px;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowLabel {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.rowDesc {
+  font-size: 0.78rem;
+  color: var(--gray-400);
+}
+
+.rowControl {
+  flex: 0 0 auto;
+}
+
+.divider {
+  height: 1px;
+  background: var(--gray-100);
+  margin: 0 16px;
+}
+
+/* Toggle */
+.toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--gray-200);
+  border: none;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.toggleOn {
+  background: var(--green-500);
+}
+
+.toggleThumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  display: block;
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(18px);
+}
+
+/* Inputs */
+.textInput {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  outline: none;
+  width: 160px;
+  text-align: right;
+}
+
+.textInput:focus {
+  border-color: var(--green-500);
+}
+
+.selectInput {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  outline: none;
+  background: white;
+}
+
+.selectInput:focus {
+  border-color: var(--green-500);
+}
+
+.numericInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.numberField {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 7px;
+  padding: 7px 8px;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  width: 60px;
+  text-align: center;
+  outline: none;
+}
+
+.numberField:focus {
+  border-color: var(--green-500);
+}
+
+.numberSuffix {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+}
+
+/* Action rows */
+.actionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  width: 100%;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--green-700);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.actionRow:active {
+  background: var(--green-50);
+}
+
+.actionRow svg {
+  width: 18px;
+  height: 18px;
+  color: var(--green-500);
+}
+
+.actionDanger {
+  color: var(--red-600);
+}
+
+.actionDanger svg {
+  color: var(--red-400);
+}
+
+.actionDanger:active {
+  background: var(--red-50);
+}
+
+/* Version */
+.version {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--gray-300);
+  margin-top: 4px;
+}

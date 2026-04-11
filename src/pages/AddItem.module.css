@@ -1,0 +1,311 @@
+.page {
+  padding-bottom: 24px;
+  min-height: 100%;
+}
+
+.pageHeader {
+  padding: 20px 16px 12px;
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--green-800);
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+/* Scanner */
+.scanSection {
+  padding: 16px;
+}
+
+.scanCard {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid var(--gray-200);
+}
+
+.scanViewfinder {
+  position: relative;
+  height: 220px;
+  background: var(--gray-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scanIdle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--gray-400);
+}
+
+.scanIdle svg {
+  width: 56px;
+  height: 56px;
+}
+
+.scanIdle span {
+  font-size: 0.875rem;
+}
+
+/* Active scan state */
+.scanActive {
+  background: #000;
+  cursor: default;
+}
+
+/* Done state */
+.scanDone {
+  background: var(--green-950, #052e16);
+  cursor: default;
+}
+
+/* Live camera feed */
+.scanVideo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Corner bracket overlays */
+.scanCorner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--green-400);
+  border-style: solid;
+  z-index: 1;
+}
+
+[data-pos="tl"] { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+[data-pos="tr"] { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+[data-pos="bl"] { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+[data-pos="br"] { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+
+.scanHint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.75rem;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Success state */
+.scanSuccess {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-400);
+}
+
+.scanSuccess svg {
+  width: 52px;
+  height: 52px;
+}
+
+.scanSuccessCode {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: var(--green-300);
+  letter-spacing: 0.5px;
+}
+
+.scanLookup {
+  font-size: 0.75rem;
+  color: var(--green-500);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.scanBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--green-600);
+  color: white;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.scanBtn:active {
+  background: var(--green-700);
+}
+
+.scanBtnStop {
+  background: var(--gray-600);
+}
+
+.scanBtnStop:active {
+  background: var(--gray-700);
+}
+
+/* Divider */
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 0 4px;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gray-300);
+}
+
+.orDivider span {
+  font-size: 0.8rem;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+/* Form */
+.form {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formSection {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sectionTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--green-700);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--green-100);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.required {
+  color: var(--red-500);
+}
+
+.input,
+.select,
+.textarea {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  background: white;
+  width: 100%;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--gray-300);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.btnPrimary {
+  flex: 1;
+  padding: 14px;
+  background: var(--green-600);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+
+.btnPrimary:active {
+  background: var(--green-700);
+}
+
+.btnSecondary {
+  flex: 0 0 auto;
+  padding: 14px 20px;
+  background: white;
+  color: var(--gray-600);
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.btnSecondary:active {
+  background: var(--gray-100);
+}

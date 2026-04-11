@@ -1,0 +1,231 @@
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 20px 16px 12px;
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--green-800);
+}
+
+.count {
+  font-size: 0.85rem;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+/* Filters */
+.filters {
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 10px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.searchWrap {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--gray-50);
+  outline: none;
+  color: var(--gray-800);
+}
+
+.searchInput:focus {
+  border-color: var(--green-500);
+  background: white;
+}
+
+.locationTabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.locationTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.locationTab {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--gray-200);
+  background: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.locationTabActive {
+  background: var(--green-600);
+  border-color: var(--green-600);
+  color: white;
+}
+
+/* Item list */
+.list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 16px;
+  color: var(--gray-300);
+}
+
+.empty svg {
+  width: 48px;
+  height: 48px;
+}
+
+.empty p {
+  font-size: 0.9rem;
+  color: var(--gray-400);
+}
+
+.item {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.itemMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.sku {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  font-family: monospace;
+}
+
+.dot {
+  color: var(--gray-300);
+  font-size: 0.7rem;
+}
+
+.category {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.locationTag {
+  font-size: 0.72rem;
+  background: var(--green-100);
+  color: var(--green-700);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.itemRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.qty {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.unit {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--gray-400);
+}
+
+/* Status badges */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.badgeOk {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+
+.badgeLow {
+  background: var(--amber-50);
+  color: var(--amber-600);
+}
+
+.badgeOut {
+  background: var(--red-50);
+  color: var(--red-600);
+}
