@@ -1,4 +1,10 @@
 import { useTranslation } from 'react-i18next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCircleCheck,
+  faCircleExclamation,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons'
 import styles from './Alerts.module.css'
 
 const ALERTS = [
@@ -38,24 +44,12 @@ const TYPE_CONFIG = {
   out: {
     label: 'Out of Stock',
     className: 'alertOut',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-    ),
+    icon: <FontAwesomeIcon icon={faCircleExclamation} aria-hidden="true" />,
   },
   low: {
     label: 'Low Stock',
     className: 'alertLow',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    ),
+    icon: <FontAwesomeIcon icon={faTriangleExclamation} aria-hidden="true" />,
   },
 }
 
@@ -85,10 +79,7 @@ export default function Alerts() {
       <div className={styles.list}>
         {ALERTS.length === 0 ? (
           <div className={styles.empty}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+            <FontAwesomeIcon icon={faCircleCheck} aria-hidden="true" />
             <p>{t('alerts.emptyHint')}</p>
           </div>
         ) : (

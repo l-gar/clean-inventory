@@ -3,7 +3,11 @@ import { initReactI18next } from 'react-i18next'
 import en from './locales/en.json'
 import es from './locales/es.json'
 
-const savedLang = localStorage.getItem('language') || 'en'
+// Read from the new key first; fall back to the old key for existing users.
+const savedLang =
+  localStorage.getItem('cleaninv_language') ||
+  localStorage.getItem('language') ||
+  'en'
 
 i18n
   .use(initReactI18next)

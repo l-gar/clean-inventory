@@ -1,0 +1,633 @@
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-page);
+  overflow: hidden;
+}
+
+/* App mode: make room for the fixed bottom nav */
+.pageApp {
+  padding-bottom: 0; /* bottom nav is fixed, content gets padding via .content */
+}
+
+/* ── App header — matches Layout.jsx header ──────────────────────────────── */
+.appHeader {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--green-600);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+/* Gate mode: logo left, logout right */
+.appHeaderInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 52px;
+}
+
+/* App mode: back left | title center | logout right */
+.appHeaderInnerApp {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+/* Logo — gate mode left element */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+}
+
+.logo svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Back button — app mode left element */
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 4px;
+  border-radius: 6px;
+  transition: color 0.15s;
+  justify-self: start;
+}
+
+.backBtn:hover {
+  color: #fff;
+}
+
+.backBtn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Centered page title — app mode center element */
+.headerTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  justify-self: center;
+}
+
+/* Logout button — right element in both modes */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  justify-self: end;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.logoutBtn:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.logoutBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Scrollable content area below the header ───────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 96px; /* clearance for FAB; app mode adds extra for bottom nav */
+  min-height: 0;
+}
+
+/* Extra bottom padding when bottom nav is present */
+.pageApp .content {
+  padding-bottom: 152px; /* FAB clearance + bottom nav (56px) */
+}
+
+/* ── Centered helper — error state ──────────────────────────────────────── */
+.centered {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px 24px;
+}
+
+/* ── List header (shown above the card list when locations exist) ─────────── */
+.listHeader {
+  padding: 24px 20px 12px;
+}
+
+.pageTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 4px;
+}
+
+.pageSubtitle {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin: 0;
+}
+
+/* ── Empty state — centered in the content flex column ──────────────────── */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px 56px;
+  text-align: center;
+  gap: 12px;
+}
+
+.emptyIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--green-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.emptyIcon svg,
+.emptyIcon .svg-inline--fa {
+  width: 36px;
+  height: 36px;
+  color: var(--green-600);
+}
+
+.emptyTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.emptyBody {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 0 8px;
+}
+
+/* ── Location list ──────────────────────────────────────────────────────── */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+}
+
+.cardLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardIcon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--green-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardIcon svg,
+.cardIcon .svg-inline--fa {
+  width: 18px;
+  height: 18px;
+  color: var(--green-600);
+}
+
+.cardName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Card action buttons ────────────────────────────────────────────────── */
+.cardActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: var(--gray-100);
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.iconBtn svg,
+.iconBtn .svg-inline--fa {
+  width: 16px;
+  height: 16px;
+}
+
+.iconBtn:hover {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.iconBtnDanger:hover {
+  background: var(--red-50, #fff5f5);
+  color: var(--red-600, #dc2626);
+}
+
+/* ── Delete confirmation (inline inside card) ───────────────────────────── */
+.deleteConfirm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deleteMsg {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin: 0;
+}
+
+.deleteActions {
+  display: flex;
+  gap: 8px;
+}
+
+.deleteErrorText {
+  font-size: 0.8rem;
+  color: var(--red-600, #dc2626);
+  margin: 0;
+}
+
+/* ── FAB ────────────────────────────────────────────────────────────────── */
+/* Gate mode: no bottom nav, so FAB sits 24px from bottom */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: var(--green-600);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s, transform 0.15s;
+  z-index: 5;
+}
+
+/* App mode: FAB sits above the bottom nav (56px) + 16px gap */
+.pageApp .fab {
+  bottom: 72px;
+}
+
+.fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fab:hover {
+  background: var(--green-700);
+  transform: scale(1.05);
+}
+
+.fab:active {
+  transform: scale(0.97);
+}
+
+/* ── Bottom sheet backdrop ──────────────────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 20;
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+
+.backdropVisible {
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: all;
+}
+
+/* ── Bottom sheet panel ─────────────────────────────────────────────────── */
+.sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.sheetOpen {
+  transform: translateY(0);
+}
+
+.sheetHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-300);
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+.sheetTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+/* ── Form inside sheet ──────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.input {
+  width: 100%;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  background: var(--color-page);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--green-500);
+}
+
+.inputError {
+  border-color: var(--red-500, #ef4444);
+}
+
+.fieldError {
+  font-size: 0.825rem;
+  color: var(--red-600, #dc2626);
+  margin: 0;
+}
+
+/* ── Sheet buttons ──────────────────────────────────────────────────────── */
+.sheetButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Shared buttons ─────────────────────────────────────────────────────── */
+.btnPrimary {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--green-600);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btnPrimary:hover {
+  background: var(--green-700);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  width: 100%;
+  padding: 11px 20px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gray-600);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btnSecondary:hover {
+  background: var(--gray-100);
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--red-600, #dc2626);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btnDanger:hover {
+  background: var(--red-700, #b91c1c);
+}
+
+.btnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Error text ─────────────────────────────────────────────────────────── */
+.loadErrorText {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  text-align: center;
+  margin: 0;
+}
+
+/* ── In-content back button (app mode — Layout provides header) ─────────── */
+.backRow {
+  padding: 14px 16px 0;
+}
+
+.backLinkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--green-600);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 2px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.backLinkBtn:hover {
+  color: var(--green-700);
+}
+
+/* ── Bottom navigation (app mode only) ──────────────────────────────────── */
+/* Matches Layout.module.css exactly so the transition between pages is seamless */
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: var(--color-surface);
+  border-top: 1px solid var(--gray-200);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.navItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: var(--gray-400);
+  transition: color 0.15s ease;
+  min-height: 56px;
+}
+
+.navItem:active {
+  background: var(--color-page);
+}
+
+.navItemActive {
+  color: var(--green-600);
+}
+
+.navIcon {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.navIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.navLabel {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}

@@ -1,0 +1,80 @@
+.screen {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--color-page);
+}
+
+/* 2×2 bento grid — matches the app icon proportions */
+.icon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  width: 54px;
+  height: 54px;
+}
+
+.icon > span {
+  display: block;
+  border-radius: 5px;
+  background: #1d9e75;
+  /* Start invisible — keyframes take over immediately */
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+/* ── Per-square keyframes ──────────────────────────────────────────────────
+   All four share the same 2.5s duration with NO animation-delay.
+   The stagger is baked into each keyframe so infinite loops stay in sync.
+
+   Timeline (2.5s = 100%):
+     0–8%    sq1 pops in  (≈0.2s)
+     10–18%  sq2 pops in  (≈0.45s)
+     20–28%  sq3 pops in  (≈0.7s)
+     30–38%  sq4 pops in  (≈0.95s)
+     38–70%  all four hold visible together  (≈0.8s logo pause)
+     70–82%  all fade out together
+     82–100% all invisible — pause before next loop
+   ──────────────────────────────────────────────────────────────────────── */
+
+@keyframes sq-tl {
+  0%         { opacity: 0; transform: scale(0.5); }
+  8%         { opacity: 1; transform: scale(1);   }
+  70%        { opacity: 1; transform: scale(1);   }
+  82%, 100%  { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes sq-tr {
+  0%, 10%    { opacity: 0; transform: scale(0.5); }
+  18%        { opacity: 1; transform: scale(1);   }
+  70%        { opacity: 1; transform: scale(1);   }
+  82%, 100%  { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes sq-bl {
+  0%, 20%    { opacity: 0; transform: scale(0.5); }
+  28%        { opacity: 1; transform: scale(1);   }
+  70%        { opacity: 1; transform: scale(1);   }
+  82%, 100%  { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes sq-br {
+  0%, 30%    { opacity: 0; transform: scale(0.5); }
+  38%        { opacity: 1; transform: scale(1);   }
+  70%        { opacity: 1; transform: scale(1);   }
+  82%, 100%  { opacity: 0; transform: scale(0.5); }
+}
+
+.sqTl { animation: sq-tl 2.5s ease-out infinite both; }
+.sqTr { animation: sq-tr 2.5s ease-out infinite both; }
+.sqBl { animation: sq-bl 2.5s ease-out infinite both; }
+.sqBr { animation: sq-br 2.5s ease-out infinite both; }
+
+.message {
+  font-size: 0.8rem;
+  color: var(--gray-400);
+  letter-spacing: 0.02em;
+}

@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faChevronRight,
+  faDownload,
+  faPenToSquare,
+} from '@fortawesome/free-solid-svg-icons'
+import { useAuth } from '../context/AuthContext'
+import { callAppsScript } from '../utils/appsScript'
+import LocationSelect from '../components/LocationSelect'
 import styles from './Settings.module.css'
 
 function Toggle({ checked, onChange }) {
@@ -30,30 +40,96 @@ function SettingsRow({ label, description, children }) {
 
 export default function Settings() {
   const { t, i18n } = useTranslation()
+  const { user, updateUser } = useAuth()
+  const navigate = useNavigate()
   const [lang, setLang] = useState(i18n.language)
+
+  const isOwner = user?.role === 'org_owner'
+  const canManageLocations = user?.role === 'org_owner' || user?.role === 'manager'
+
+  // ── Org name editing (org_owner only) ─────────────────────────────────────
+  const [orgName, setOrgName] = useState(user?.orgName ?? '')
+  const [orgNameEditing, setOrgNameEditing] = useState(false)
+  const [orgNameSaving, setOrgNameSaving] = useState(false)
+  const [orgNameError, setOrgNameError] = useState('')
+  const orgNameDirty = orgName.trim() !== (user?.orgName ?? '').trim()
+
+  useEffect(() => {
+    setOrgName(user?.orgName ?? '')
+  }, [user?.orgName])
+
+  async function handleOrgNameSave() {
+    const trimmed = orgName.trim()
+    if (!trimmed || !orgNameDirty) return
+    setOrgNameSaving(true)
+    setOrgNameError('')
+    try {
+      await callAppsScript('updateOrgName', {
+        email: user.email,
+        orgId: user.orgId,
+        orgName: trimmed,
+      })
+      updateUser({ orgName: trimmed })
+      setOrgNameEditing(false)
+    } catch {
+      setOrgNameError(t('settings.business.orgNameError'))
+    } finally {
+      setOrgNameSaving(false)
+    }
+  }
+
+  function handleOrgNameEditStart() {
+    setOrgName(user?.orgName ?? '')
+    setOrgNameError('')
+    setOrgNameEditing(true)
+  }
+
+  function handleOrgNameCancel() {
+    setOrgName(user?.orgName ?? '')
+    setOrgNameError('')
+    setOrgNameEditing(false)
+  }
 
   function handleLangChange(e) {
     const next = e.target.value
     i18n.changeLanguage(next)
-    localStorage.setItem('language', next)
+    localStorage.setItem('cleaninv_language', next)
     setLang(next)
   }
 
-  const [prefs, setPrefs] = useState({
+  // Per-user localStorage key for the default location preference.
+  // Scoped to the logged-in email so multiple users on the same device
+  // keep independent preferences.
+  const defaultLocKey = user?.email
+    ? `cleaninv_default_location_${user.email}`
+    : null
+
+  const [prefs, setPrefs] = useState(() => ({
     lowStockAlerts: true,
     outOfStockAlerts: true,
     pushNotifications: false,
     darkMode: localStorage.getItem('darkMode') === 'true',
     compactView: false,
-    defaultLocation: 'Truck 1',
-    businessName: 'Sparkle Clean Co.',
+    defaultLocation: defaultLocKey
+      ? (localStorage.getItem(defaultLocKey) ?? '')
+      : '',
     lowStockThreshold: '20',
-  })
+  }))
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', prefs.darkMode)
     localStorage.setItem('darkMode', prefs.darkMode)
   }, [prefs.darkMode])
+
+  // Persist the default location preference whenever the user changes it.
+  useEffect(() => {
+    if (!defaultLocKey) return
+    if (prefs.defaultLocation) {
+      localStorage.setItem(defaultLocKey, prefs.defaultLocation)
+    } else {
+      localStorage.removeItem(defaultLocKey)
+    }
+  }, [prefs.defaultLocation, defaultLocKey])
 
   function set(key) {
     return (val) => setPrefs((p) => ({ ...p, [key]: val }))
@@ -72,16 +148,67 @@ export default function Settings() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t('settings.sections.business')}</h2>
           <div className={styles.card}>
-            <div className={styles.row}>
+            <div className={`${styles.row} ${orgNameEditing ? styles.businessNameRowEditing : ''}`}>
               <div className={styles.rowText}>
-                <label className={styles.rowLabel} htmlFor="bizName">{t('settings.business.businessName')}</label>
+                <label className={`${styles.rowLabel} ${styles.businessNameLabel}`} htmlFor="bizName">
+                  {t('settings.business.businessName')}
+                </label>
+                {orgNameError ? (
+                  <span className={styles.rowError}>{orgNameError}</span>
+                ) : null}
               </div>
-              <input
-                id="bizName"
-                className={styles.textInput}
-                value={prefs.businessName}
-                onChange={(e) => set('businessName')(e.target.value)}
-              />
+              {isOwner ? (
+                <div className={styles.orgNameControl}>
+                  {orgNameEditing ? (
+                    <div className={styles.orgNameEditForm}>
+                      <input
+                        id="bizName"
+                        className={`${styles.textInput} ${styles.orgNameInput}`}
+                        value={orgName}
+                        autoFocus
+                        onChange={(e) => { setOrgName(e.target.value); setOrgNameError('') }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleOrgNameSave()
+                          if (e.key === 'Escape') handleOrgNameCancel()
+                        }}
+                      />
+                      <div className={styles.inlineActions}>
+                        <button
+                          type="button"
+                          className={styles.cancelInlineBtn}
+                          onClick={handleOrgNameCancel}
+                          disabled={orgNameSaving}
+                        >
+                          {t('settings.business.orgNameCancel')}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.saveInlineBtn}
+                          onClick={handleOrgNameSave}
+                          disabled={orgNameSaving || !orgName.trim() || !orgNameDirty}
+                        >
+                          {orgNameSaving ? t('settings.business.orgNameSaving') : t('settings.business.orgNameSave')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.inlineEditTrigger}
+                      onClick={handleOrgNameEditStart}
+                      aria-label={t('settings.business.orgNameEdit')}
+                      title={t('settings.business.orgNameEdit')}
+                    >
+                      <span className={styles.readOnlyValue}>{user?.orgName ?? '—'}</span>
+                      <span className={styles.editInlineBtn} aria-hidden="true">
+                        <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span className={styles.readOnlyValue}>{user?.orgName ?? '—'}</span>
+              )}
             </div>
             <div className={styles.divider} />
             <div className={styles.row}>
@@ -89,15 +216,32 @@ export default function Settings() {
                 <label className={styles.rowLabel} htmlFor="defaultLoc">{t('settings.business.defaultLocation')}</label>
                 <span className={styles.rowDesc}>{t('settings.business.defaultLocationDesc')}</span>
               </div>
-              <select
+              <LocationSelect
                 id="defaultLoc"
-                className={styles.selectInput}
                 value={prefs.defaultLocation}
                 onChange={(e) => set('defaultLocation')(e.target.value)}
+                className={styles.selectInput}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Language */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t('settings.sections.language')}</h2>
+          <div className={styles.card}>
+            <div className={styles.row}>
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>{t('settings.language.label')}</span>
+                <span className={styles.rowDesc}>{t('settings.language.desc')}</span>
+              </div>
+              <select
+                className={styles.selectInput}
+                value={lang}
+                onChange={handleLangChange}
               >
-                {['Truck 1', 'Truck 2', 'Warehouse', 'Office', 'Site A', 'Site B'].map((l) => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
+                <option value="en">{t('settings.language.en')}</option>
+                <option value="es">{t('settings.language.es')}</option>
               </select>
             </div>
           </div>
@@ -156,33 +300,34 @@ export default function Settings() {
             <SettingsRow label={t('settings.display.darkMode')} description={t('settings.display.darkModeDesc')}>
               <Toggle checked={prefs.darkMode} onChange={set('darkMode')} />
             </SettingsRow>
-            <div className={styles.divider} />
+            {/* <div className={styles.divider} />
             <SettingsRow label={t('settings.display.compactView')} description={t('settings.display.compactViewDesc')}>
               <Toggle checked={prefs.compactView} onChange={set('compactView')} />
-            </SettingsRow>
+            </SettingsRow> */}
           </div>
         </section>
 
-        {/* Language */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.language')}</h2>
-          <div className={styles.card}>
-            <div className={styles.row}>
-              <div className={styles.rowText}>
-                <span className={styles.rowLabel}>{t('settings.language.label')}</span>
-                <span className={styles.rowDesc}>{t('settings.language.desc')}</span>
-              </div>
-              <select
-                className={styles.selectInput}
-                value={lang}
-                onChange={handleLangChange}
+        
+
+        {/* Organization — org_owner and manager only */}
+        {canManageLocations && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>{t('settings.sections.organization')}</h2>
+            <div className={styles.card}>
+              <button
+                className={styles.actionRow}
+                type="button"
+                onClick={() => navigate('/locations', { state: { fromSettings: true } })}
               >
-                <option value="en">{t('settings.language.en')}</option>
-                <option value="es">{t('settings.language.es')}</option>
-              </select>
+                <div className={styles.rowText}>
+                  <span className={styles.rowLabel}>{t('settings.organization.manageLocations')}</span>
+                  <span className={styles.rowDesc}>{t('settings.organization.manageLocationsDesc')}</span>
+                </div>
+                <FontAwesomeIcon icon={faChevronRight} aria-hidden="true" />
+              </button>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Data */}
         <section className={styles.section}>
@@ -190,11 +335,7 @@ export default function Settings() {
           <div className={styles.card}>
             <button className={styles.actionRow} type="button">
               <span>{t('settings.data.exportCsv')}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <FontAwesomeIcon icon={faDownload} aria-hidden="true" />
             </button>
             {/* <div className={styles.divider} />
             <button className={styles.actionRow} type="button">
@@ -205,7 +346,7 @@ export default function Settings() {
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             </button> */}
-            <div className={styles.divider} />
+            {/* <div className={styles.divider} />
             <button className={`${styles.actionRow} ${styles.actionDanger}`} type="button">
               <span>{t('settings.data.clearAll')}</span>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -215,7 +356,7 @@ export default function Settings() {
                 <path d="M14 11v6" />
                 <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
               </svg>
-            </button>
+            </button> */}
           </div>
         </section>
 

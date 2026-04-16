@@ -1,0 +1,25 @@
+/* Wrapper used only for the empty/error state to stack hint below the select */
+.emptyWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.emptyHint {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Plain-text display for org_member with a single location */
+.singleLocation {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gray-700);
+  padding: 7px 0;
+}

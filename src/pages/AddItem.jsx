@@ -1,37 +1,150 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faArrowLeft,
+  faBarcode,
+  faCircleCheck,
+} from '@fortawesome/free-solid-svg-icons'
+import { useAuth } from '../context/AuthContext'
+import { useLocations } from '../hooks/useLocations'
+import { callAppsScript, addItem } from '../utils/appsScript'
+import { useStore } from '../store'
+import LocationSelect from '../components/LocationSelect'
 import styles from './AddItem.module.css'
 
-const LOCATIONS = ['Truck 1', 'Truck 2', 'Warehouse', 'Office', 'Site A', 'Site B']
 const CATEGORIES = ['Chemicals', 'Equipment', 'PPE', 'Consumables', 'Tools']
 const UNITS = ['each', 'bottle', 'box', 'case', 'gallon', 'liter', 'kg', 'lb']
 
-export default function AddItem() {
-  const { t } = useTranslation()
-  const [scanStatus, setScanStatus] = useState('idle') // 'idle' | 'scanning' | 'done'
-  const [lookingUp, setLookingUp] = useState(false)
-  const [testCode, setTestCode] = useState('')
-  const [form, setForm] = useState({
-    name: '',
-    sku: '',
-    category: '',
-    location: '',
-    quantity: '',
-    unit: 'each',
-    minQuantity: '',
-    notes: '',
-  })
-  const videoRef = useRef(null)
-  const readerRef = useRef(null)
+const EMPTY_FORM = {
+  name: '', brand: '', sku: '', category: '',
+  location: '', quantity: '', unit: 'each',
+  minQuantity: '', costPerUnit: '', expectedJobs: '', notes: '',
+}
 
-  // Clean up camera on unmount
+export default function AddItem() {
+  const { t }       = useTranslation()
+  const navigate    = useNavigate()
+  const { user }    = useAuth()
+  const { locations } = useLocations()
+  const invalidateInventory = useStore((s) => s.invalidateInventory)
+  const storeInventory      = useStore((s) => s.inventory)
+  const storeFetchInventory = useStore((s) => s.fetchInventory)
+
+  const isMember = user?.role === 'org_member'
+
+  // 'lookup' → scan / type SKU
+  // 'new_item' → not in org → full add form
+  const [phase,      setPhase]      = useState('lookup')
+  const [scanStatus, setScanStatus] = useState('idle') // 'idle' | 'scanning' | 'found'
+  const [skuInput,   setSkuInput]   = useState('')
+  const [lookingUp,  setLookingUp]  = useState(false)
+
+  const [form,        setForm]        = useState({ ...EMPTY_FORM })
+  const [saving,      setSaving]      = useState(false)
+  const [saveError,   setSaveError]   = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
+
+  const videoRef        = useRef(null)
+  const readerRef       = useRef(null)
+  const successTimerRef = useRef(null)
+
+  useEffect(() => {
+    setForm((prev) => {
+      if (prev.location || locations.length === 0) return prev
+      if (isMember && locations.length !== 1) return prev
+      return { ...prev, location: locations[0].location_id }
+    })
+  }, [isMember, locations])
+
   useEffect(() => {
     return () => {
       readerRef.current?.reset()
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
     }
   }, [])
 
+  function getDefaultLocation() {
+    if (locations.length === 0) return ''
+    if (isMember && locations.length !== 1) return ''
+    return locations[0].location_id
+  }
+
+  function resetToLookup() {
+    readerRef.current?.reset()
+    readerRef.current = null
+    setScanStatus('idle')
+    setPhase('lookup')
+    setSkuInput('')
+    setSaveError('')
+    setSaveSuccess(false)
+    setForm({ ...EMPTY_FORM, location: getDefaultLocation() })
+  }
+
+  // ── Core lookup ───────────────────────────────────────────────────────────
+  // 1. Fetch org inventory via store ('all' locations — always, so no location
+  //    is missed; the store cache makes repeat calls instant).
+  // 2. If a barcode match is found client-side, redirect to EditItem.
+  // 3. Call lookupBarcode.  Apps Script now returns existsInInventory + full
+  //    item data when found — redirect to EditItem for those too.
+  // 4. Otherwise pre-fill the new-item form with any product info found.
+  async function runLookup(rawCode) {
+    const code = rawCode.trim()
+    if (!code) return
+    setLookingUp(true)
+
+    const padded = code.padStart(12, '0')
+
+    // Step 1 — client-side store check (fast path)
+    let inventory = storeInventory
+    try {
+      inventory = await storeFetchInventory(user.email, user.orgId, 'all')
+    } catch { /* fall through with cached data */ }
+
+    const storeMatch = inventory.find((item) => {
+      if (!item.barcode) return false
+      const b = String(item.barcode)
+      return b === code || b === padded
+    })
+
+    if (storeMatch) {
+      setLookingUp(false)
+      navigate(`/edit/${storeMatch.itemId}`, { state: { item: storeMatch } })
+      return
+    }
+
+    // Step 2 — Apps Script lookup chain (org sheet → cache → UPCitemdb → OFN)
+    try {
+      const data = await callAppsScript('lookupBarcode', { upc: padded })
+
+      if (data?.existsInInventory && data?.itemId) {
+        // Apps Script found the item in the org's inventory sheet
+        setLookingUp(false)
+        navigate(`/edit/${data.itemId}`, { state: { item: data } })
+        return
+      }
+
+      // Product info found from an external source — pre-fill the new-item form
+      const title = data?.title ?? data?.name ?? data?.product_name ?? ''
+      const brand  = data?.brand ?? ''
+      setForm((prev) => ({
+        ...prev,
+        sku:   code,
+        name:  title,
+        brand: brand || prev.brand,
+      }))
+    } catch {
+      setForm((prev) => ({ ...prev, sku: code }))
+    } finally {
+      setLookingUp(false)
+    }
+
+    setPhase('new_item')
+  }
+
+  // ── Camera scanner ────────────────────────────────────────────────────────
   async function startScan() {
     setScanStatus('scanning')
     const reader = new BrowserMultiFormatReader()
@@ -42,40 +155,17 @@ export default function AddItem() {
         { video: { facingMode: { ideal: 'environment' } } },
         videoRef.current,
         async (result, err) => {
-          // NotFoundException fires on every frame with no barcode — ignore it
-          if (err && !(err instanceof NotFoundException)) {
-            console.warn('Scanner error:', err)
-          }
+          if (err && !(err instanceof NotFoundException)) console.warn('Scanner error:', err)
           if (!result || !readerRef.current) return
-
           const code = result.getText()
-
-          // Stop camera immediately
           readerRef.current.reset()
           readerRef.current = null
-          setScanStatus('done')
-          setForm((prev) => ({ ...prev, sku: code }))
-
-          // Look up product name from Open Food Facts
-          setLookingUp(true)
-          try {
-            const res = await fetch(
-              `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`
-            )
-            const data = await res.json()
-            const title = data?.product?.product_name
-            if (title) {
-              setForm((prev) => ({ ...prev, name: title }))
-            }
-          } catch (_) {
-            // API unavailable — leave name blank for manual entry
-          } finally {
-            setLookingUp(false)
-          }
-        }
+          setScanStatus('found')
+          setSkuInput(code)
+          await runLookup(code)
+        },
       )
-    } catch (_) {
-      // Camera permission denied or no camera available
+    } catch {
       setScanStatus('idle')
       readerRef.current = null
     }
@@ -87,49 +177,39 @@ export default function AddItem() {
     setScanStatus('idle')
   }
 
-  function handleScanAgain() {
-    setForm((prev) => ({ ...prev, sku: '', name: '' }))
-    startScan()
-  }
-
-  async function handleTestLookup() {
-    const code = testCode.trim()
-    if (!code) return
-
-    console.group(`[UPC Test] Lookup for: ${code}`)
-    console.log('1. Setting sku field →', code)
-    setScanStatus('done')
-    setForm((prev) => ({ ...prev, sku: code, name: '' }))
-    setLookingUp(true)
-
-    const url = `https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(code)}.json`
-    console.log('2. Fetching →', url)
+  // ── Save new item ─────────────────────────────────────────────────────────
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setSaveError('')
+    setSaveSuccess(false)
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
 
     try {
-      const res = await fetch(url)
-      console.log('3. HTTP status →', res.status, res.statusText)
-
-      const data = await res.json()
-      console.log('4. Raw response →', data)
-
-      const product = data?.product
-      if (product) {
-        console.log('5. Product object →', product)
-        const title = product.product_name
-        if (title) {
-          console.log('6. Setting name field →', title)
-          setForm((prev) => ({ ...prev, name: title }))
-        } else {
-          console.warn('6. Product found but product_name is empty — leaving name blank')
-        }
-      } else {
-        console.warn('5. No product returned (status:', data?.status, ')— leaving name blank')
-      }
+      await addItem(user.email, user.orgId, {
+        itemName:     form.name,
+        brand:        form.brand,
+        barcode:      form.sku,
+        quantity:     form.quantity,
+        unit:         form.unit,
+        category:     form.category,
+        locationId:   form.location,
+        costPerUnit:  form.costPerUnit,
+        expectedJobs: form.expectedJobs,
+        trackStock:   true,
+      })
+      invalidateInventory()
+      setSaveSuccess(true)
+      successTimerRef.current = setTimeout(() => {
+        setSaveSuccess(false)
+        resetToLookup()
+      }, 4000)
     } catch (err) {
-      console.error('3. Fetch failed →', err)
+      const raw = err?.message ?? ''
+      const isGenericAppsScriptError = raw.startsWith('Apps Script action')
+      setSaveError(isGenericAppsScriptError ? t('add_item_save_error') : raw || t('add_item_save_error'))
     } finally {
-      setLookingUp(false)
-      console.groupEnd()
+      setSaving(false)
     }
   }
 
@@ -137,15 +217,10 @@ export default function AddItem() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
-    // TODO: save to backend
-    alert(t('item_saved', { name: form.name }))
-  }
+  const scanning  = scanStatus === 'scanning'
+  const scanFound = scanStatus === 'found'
 
-  const scanning = scanStatus === 'scanning'
-  const done = scanStatus === 'done'
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
@@ -153,295 +228,338 @@ export default function AddItem() {
         <p className={styles.subtitle}>{t('add_item_subtitle')}</p>
       </div>
 
-      {/* Barcode Scanner Section */}
-      <section className={styles.scanSection}>
-        <div className={styles.scanCard}>
-          <div
-            className={`${styles.scanViewfinder} ${scanning ? styles.scanActive : ''} ${done ? styles.scanDone : ''}`}
-          >
-            {/* Video element — rendered but hidden when not scanning */}
-            <video
-              ref={videoRef}
-              className={styles.scanVideo}
-              style={{ display: scanning ? 'block' : 'none' }}
-              playsInline
-              muted
-            />
+      {/* ── Phase: lookup ─────────────────────────────────────── */}
+      {phase === 'lookup' && (
+        <section className={styles.scanSection}>
 
-            {scanning && (
-              <>
-                <div className={styles.scanCorner} data-pos="tl" />
-                <div className={styles.scanCorner} data-pos="tr" />
-                <div className={styles.scanCorner} data-pos="bl" />
-                <div className={styles.scanCorner} data-pos="br" />
-                <p className={styles.scanHint}>{t('point_camera_at_barcode')}</p>
-              </>
-            )}
-
-            {done && (
-              <div className={styles.scanSuccess}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span className={styles.scanSuccessCode}>{form.sku}</span>
-                {lookingUp && <span className={styles.scanLookup}>{t('looking_up_product')}</span>}
-              </div>
-            )}
-
-            {!scanning && !done && (
-              <div className={styles.scanIdle}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                  <line x1="7" y1="12" x2="7" y2="12.01" strokeWidth={3} />
-                  <line x1="10" y1="9" x2="10" y2="15" />
-                  <line x1="13" y1="9" x2="13" y2="15" />
-                  <line x1="16" y1="12" x2="16" y2="12.01" strokeWidth={3} />
-                </svg>
-                <span>{t('tap_to_scan')}</span>
-              </div>
-            )}
-          </div>
-
-          {scanning && (
-            <button
-              type="button"
-              className={`${styles.scanBtn} ${styles.scanBtnStop}`}
-              onClick={stopScan}
+          <div className={styles.scanCard}>
+            <div
+              className={`${styles.scanViewfinder} ${scanning ? styles.scanActive : ''} ${scanFound ? styles.scanDone : ''}`}
             >
-              {t('stop_scanning')}
-            </button>
-          )}
-          {done && (
-            <button type="button" className={styles.scanBtn} onClick={handleScanAgain}>
-              {t('scan_again')}
-            </button>
-          )}
-          {!scanning && !done && (
-            <button type="button" className={styles.scanBtn} onClick={startScan}>
-              {t('start_camera_scan')}
-            </button>
-          )}
-        </div>
-
-        <div className={styles.orDivider}>
-          <span>{t('or_enter_manually')}</span>
-        </div>
-
-        {import.meta.env.DEV && (
-          <div className={styles.devPanel}>
-            <p className={styles.devLabel}>{t('dev_test_panel')}</p>
-            <div className={styles.devRow}>
-              <input
-                className={styles.devInput}
-                type="text"
-                placeholder={t('dev_enter_upc')}
-                value={testCode}
-                onChange={(e) => setTestCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleTestLookup()}
+              <video
+                ref={videoRef}
+                className={styles.scanVideo}
+                style={{ display: scanning ? 'block' : 'none' }}
+                playsInline
+                muted
               />
+
+              {scanning && (
+                <>
+                  <div className={styles.scanCorner} data-pos="tl" />
+                  <div className={styles.scanCorner} data-pos="tr" />
+                  <div className={styles.scanCorner} data-pos="bl" />
+                  <div className={styles.scanCorner} data-pos="br" />
+                  <p className={styles.scanHint}>{t('point_camera_at_barcode')}</p>
+                </>
+              )}
+
+              {scanFound && (
+                <div className={styles.scanSuccess}>
+                  <FontAwesomeIcon icon={faCircleCheck} aria-hidden="true" />
+                  <span className={styles.scanSuccessCode}>{skuInput}</span>
+                  {lookingUp && (
+                    <span className={styles.scanLookup}>{t('looking_up_product')}</span>
+                  )}
+                </div>
+              )}
+
+              {!scanning && !scanFound && (
+                <div className={styles.scanIdle}>
+                  <FontAwesomeIcon icon={faBarcode} aria-hidden="true" />
+                  <span>{t('tap_to_scan')}</span>
+                </div>
+              )}
+            </div>
+
+            {scanning ? (
               <button
                 type="button"
-                className={styles.devBtn}
-                onClick={handleTestLookup}
-                disabled={!testCode.trim() || lookingUp}
+                className={`${styles.scanBtn} ${styles.scanBtnStop}`}
+                onClick={stopScan}
               >
-                {lookingUp ? t('dev_looking_up') : t('dev_test_btn')}
+                {t('stop_scanning')}
               </button>
-            </div>
-            <p className={styles.devHint}>{t('dev_hint')}</p>
+            ) : (
+              <button
+                type="button"
+                className={styles.scanBtn}
+                onClick={startScan}
+                disabled={lookingUp}
+              >
+                {t('start_camera_scan')}
+              </button>
+            )}
           </div>
-        )}
-      </section>
 
-      {/* Manual Entry Form */}
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
+          <div className={styles.orDivider}>
+            <span>{t('or_enter_sku')}</span>
+          </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="name">
-              {t('item_name')} <span className={styles.required}>*</span>
-            </label>
+          <div className={styles.skuRow}>
             <input
-              id="name"
-              name="name"
+              className={styles.skuInput}
               type="text"
-              className={styles.input}
-              placeholder={t('item_name_placeholder')}
-              value={form.name}
-              onChange={handleChange}
-              required
+              placeholder={t('sku_lookup_placeholder')}
+              value={skuInput}
+              onChange={(e) => setSkuInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && runLookup(skuInput)}
             />
+            <button
+              type="button"
+              className={styles.skuBtn}
+              onClick={() => runLookup(skuInput)}
+              disabled={!skuInput.trim() || lookingUp}
+            >
+              {lookingUp ? t('looking_up_product') : t('look_up')}
+            </button>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="sku">
-              {t('sku_barcode')}
-            </label>
-            <input
-              id="sku"
-              name="sku"
-              type="text"
-              className={styles.input}
-              placeholder={t('sku_placeholder')}
-              value={form.sku}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className={styles.fieldRow}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="category">
-                {t('category')}
-              </label>
-              <select
-                id="category"
-                name="category"
-                className={styles.select}
-                value={form.category}
-                onChange={handleChange}
-              >
-                <option value="">{t('select_placeholder')}</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="location">
-                {t('location')} <span className={styles.required}>*</span>
-              </label>
-              <select
-                id="location"
-                name="location"
-                className={styles.select}
-                value={form.location}
-                onChange={handleChange}
-                required
-              >
-                <option value="">{t('select_placeholder')}</option>
-                {LOCATIONS.map((l) => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
-
-          <div className={styles.fieldRow}>
-            <div className={styles.field} style={{ flex: 2 }}>
-              <label className={styles.label} htmlFor="quantity">
-                {t('current_qty')} <span className={styles.required}>*</span>
-              </label>
-              <input
-                id="quantity"
-                name="quantity"
-                type="number"
-                min="0"
-                className={styles.input}
-                placeholder="0"
-                value={form.quantity}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className={styles.field} style={{ flex: 1 }}>
-              <label className={styles.label} htmlFor="unit">
-                {t('unit')}
-              </label>
-              <select
-                id="unit"
-                name="unit"
-                className={styles.select}
-                value={form.unit}
-                onChange={handleChange}
-              >
-                {UNITS.map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.field} style={{ flex: 2 }}>
-              <label className={styles.label} htmlFor="minQuantity">
-                {t('alert_below')}
-              </label>
-              <input
-                id="minQuantity"
-                name="minQuantity"
-                type="number"
-                min="0"
-                className={styles.input}
-                placeholder="0"
-                value={form.minQuantity}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>{t('notes')}</h2>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="notes">
-              {t('additional_notes')}
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              className={styles.textarea}
-              placeholder={t('notes_placeholder')}
-              rows={3}
-              value={form.notes}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <div className={styles.actions}>
           <button
-            type="reset"
-            className={styles.btnSecondary}
-            onClick={() =>
-              setForm({
-                name: '',
-                sku: '',
-                category: '',
-                location: '',
-                quantity: '',
-                unit: 'each',
-                minQuantity: '',
-                notes: '',
-              })
-            }
+            type="button"
+            className={styles.addManuallyBtn}
+            onClick={() => setPhase('new_item')}
           >
-            {t('clear')}
+            {t('add_without_scan')}
           </button>
-          <button type="submit" className={styles.btnPrimary}>
-            {t('save_item')}
+
+        </section>
+      )}
+
+      {/* ── Phase: new item form ───────────────────────────────── */}
+      {phase === 'new_item' && (
+        <form className={styles.form} onSubmit={handleSubmit}>
+
+          <button type="button" className={styles.backBtn} onClick={resetToLookup}>
+            <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+            {t('back_to_lookup')}
           </button>
-        </div>
-      </form>
+
+          <section className={styles.formSection}>
+            <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="name">
+                {t('item_name')} <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                className={styles.input}
+                placeholder={t('item_name_placeholder')}
+                value={form.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="brand">
+                {t('brand')}
+              </label>
+              <input
+                id="brand"
+                name="brand"
+                type="text"
+                className={styles.input}
+                placeholder={t('brand_placeholder')}
+                value={form.brand}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="sku">
+                {t('sku_barcode')}
+              </label>
+              <input
+                id="sku"
+                name="sku"
+                type="text"
+                className={styles.input}
+                placeholder={t('sku_placeholder')}
+                value={form.sku}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="category">
+                  {t('category')}
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  className={styles.select}
+                  value={form.category}
+                  onChange={handleChange}
+                >
+                  <option value="">{t('select_placeholder')}</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="location">
+                  {t('location')} <span className={styles.required}>*</span>
+                </label>
+                <LocationSelect
+                  id="location"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  required
+                  className={styles.select}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.formSection}>
+            <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field} style={{ flex: 2 }}>
+                <label className={styles.label} htmlFor="quantity">
+                  {t('current_qty')} <span className={styles.required}>*</span>
+                </label>
+                <input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  placeholder="0"
+                  value={form.quantity}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className={styles.field} style={{ flex: 1 }}>
+                <label className={styles.label} htmlFor="unit">
+                  {t('unit')}
+                </label>
+                <select
+                  id="unit"
+                  name="unit"
+                  className={styles.select}
+                  value={form.unit}
+                  onChange={handleChange}
+                >
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field} style={{ flex: 2 }}>
+                <label className={styles.label} htmlFor="minQuantity">
+                  {t('alert_below')}
+                </label>
+                <input
+                  id="minQuantity"
+                  name="minQuantity"
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  placeholder="0"
+                  value={form.minQuantity}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="costPerUnit">
+                  {t('cost_per_unit')}
+                </label>
+                <input
+                  id="costPerUnit"
+                  name="costPerUnit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={styles.input}
+                  placeholder={t('cost_per_unit_placeholder')}
+                  value={form.costPerUnit}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="expectedJobs">
+                  {t('expected_jobs')}
+                </label>
+                <input
+                  id="expectedJobs"
+                  name="expectedJobs"
+                  type="number"
+                  min="0"
+                  className={styles.input}
+                  placeholder={t('expected_jobs_placeholder')}
+                  value={form.expectedJobs}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.formSection}>
+            <h2 className={styles.sectionTitle}>{t('notes')}</h2>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="notes">
+                {t('additional_notes')}
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                className={styles.textarea}
+                placeholder={t('notes_placeholder')}
+                rows={3}
+                value={form.notes}
+                onChange={handleChange}
+              />
+            </div>
+          </section>
+
+          {saveSuccess && (
+            <div className={styles.saveSuccessBanner} role="status">
+              <FontAwesomeIcon icon={faCircleCheck} aria-hidden="true" />
+              {t('item_saved_success')}
+            </div>
+          )}
+
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={resetToLookup}
+              disabled={saving}
+            >
+              {t('clear')}
+            </button>
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={saving}
+            >
+              {saving ? t('saving') : t('save_item')}
+            </button>
+          </div>
+
+          {saveError && (
+            <p className={styles.saveError} role="alert">{saveError}</p>
+          )}
+
+        </form>
+      )}
+
     </div>
   )
 }

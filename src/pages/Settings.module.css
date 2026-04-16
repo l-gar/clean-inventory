@@ -217,6 +217,160 @@
   background: var(--red-50);
 }
 
+/* Business name owner controls */
+.orgNameControl {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  flex: 0 1 320px;
+  min-width: 0;
+}
+
+.businessNameLabel {
+  white-space: nowrap;
+}
+
+.businessNameRowEditing {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.businessNameRowEditing .rowText {
+  width: 100%;
+}
+
+.businessNameRowEditing .orgNameControl {
+  width: 100%;
+  flex: none;
+  justify-content: stretch;
+}
+
+.orgNameEditForm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.inlineEditTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.inlineEdit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.orgNameInput {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.inlineActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.editInlineBtn,
+.cancelInlineBtn,
+.saveInlineBtn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.editInlineBtn,
+.cancelInlineBtn {
+  border: 1px solid var(--gray-200);
+  background: var(--color-surface);
+  color: var(--gray-700);
+}
+
+.editInlineBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.editInlineBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.inlineEditTrigger:hover .editInlineBtn,
+.cancelInlineBtn:not(:disabled):hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.saveInlineBtn {
+  border: none;
+  border: none;
+  background: var(--green-500);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.saveInlineBtn:disabled {
+  background: var(--green-300);
+  cursor: not-allowed;
+}
+
+.saveInlineBtn:not(:disabled):active {
+  background: var(--green-700);
+}
+
+.cancelInlineBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Read-only value display (manager / org_member) */
+.readOnlyValue {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .businessNameLabel {
+    white-space: normal;
+  }
+}
+
+/* Inline error below label */
+.rowError {
+  font-size: 0.78rem;
+  color: var(--red-600);
+}
+
 /* Version */
 .version {
   text-align: center;
