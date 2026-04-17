@@ -7,6 +7,7 @@ import {
   faBoxOpen,
   faLocationDot,
   faMagnifyingGlass,
+  faPenToSquare,
   faSpinner,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
@@ -35,6 +36,21 @@ function readSessionLocations(email) {
     return raw ? JSON.parse(raw) : null
   } catch {
     return null
+  }
+}
+
+function normalizeLocation(location) {
+  if (typeof location === 'string') {
+    return { location_id: location, location_name: location }
+  }
+
+  const id = location?.location_id ?? location?.locationId ?? location?.id ?? ''
+  const name = location?.location_name ?? location?.locationName ?? location?.name ?? id
+
+  return {
+    ...location,
+    location_id: id,
+    location_name: name,
   }
 }
 
@@ -88,6 +104,8 @@ export default function InventoryList() {
   const storeFetchLocations    = useStore((s) => s.fetchLocations)
   const storeFetchInventory    = useStore((s) => s.fetchInventory)
   const storeInvalidateInventory = useStore((s) => s.invalidateInventory)
+  const storeInventory         = useStore((s) => s.inventory)
+  const storeInventoryLoading  = useStore((s) => s.inventoryLoading)
 
   // ── Location filter state ─────────────────────────────────────────────────
   // availableLocations: [{location_id, location_name}] used to render tabs
@@ -96,10 +114,14 @@ export default function InventoryList() {
   // org_member → no filter shown
 
   // org_owner gets a sessionStorage seed so tabs are visible immediately.
-  // manager and org_member start empty — filled synchronously in the effect below.
-  const [availableLocations, setAvailableLocations] = useState(() =>
-    isOwner ? (readSessionLocations(user?.email) ?? []) : []
-  )
+  // manager / org_member also seed from assignedLocations when available so a
+  // hard refresh can restore the location context before the first fetch.
+  const [availableLocations, setAvailableLocations] = useState(() => {
+    if (isOwner) return (readSessionLocations(user?.email) ?? []).map(normalizeLocation)
+
+    const assigned = user?.assignedLocations ?? []
+    return assigned.map(normalizeLocation)
+  })
 
   // locationsLoaded gates the inventory fetch so we never call getInventory with
   // an unvalidated locationId:
@@ -124,10 +146,9 @@ export default function InventoryList() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialLocationId = useMemo(() => {
     if (isMember) {
-      const assigned = user?.assignedLocations ?? []
+      const assigned = (user?.assignedLocations ?? []).map(normalizeLocation)
       if (assigned.length > 0) {
-        const first = assigned[0]
-        return typeof first === 'string' ? first : (first.location_id ?? 'all')
+        return assigned[0].location_id || 'all'
       }
     }
     if (defaultLocKey) {
@@ -152,54 +173,63 @@ export default function InventoryList() {
   const [fetchError, setFetchError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+
+  // Keep the rendered list in sync with the shared store once loading settles,
+  // but do not wipe session-seeded items with an empty store during startup.
+  useEffect(() => {
+    if (storeInventoryLoading) return
+    if (storeInventory.length > 0 || hasLoadedOnce) {
+      setItems(storeInventory)
+    }
+  }, [storeInventory, storeInventoryLoading, hasLoadedOnce])
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   // Resolve a location_id to a human-readable name for the location tag.
-  function locationName(locationId) {
-    return availableLocations.find((l) => l.location_id === locationId)?.location_name ?? null
+  function locationName(locationId, fallbackName = null) {
+    return availableLocations.find((l) => l.location_id === locationId)?.location_name ?? fallbackName ?? locationId ?? null
   }
 
   // ── Load location options for filter tabs ─────────────────────────────────
   useEffect(() => {
+    if (!user?.email) return
+
     if (isOwner) {
+      if (!user?.orgId) return
+
       // storeFetchLocations is a no-op when the in-memory cache is warm.
       storeFetchLocations(user.email, user.orgId)
         .then((locs) => {
-          setAvailableLocations(locs)
+          setAvailableLocations(locs.map(normalizeLocation))
           setLocationsLoaded(true) // idempotent if already true from session seed
         })
         .catch(() => {
           // Non-fatal — tabs show "All" only; must unblock so filter resolves.
           setLocationsLoaded(true)
         })
-    } else if (isManager) {
+    } else if (isManager || isMember) {
       const assigned = user?.assignedLocations ?? []
-      setAvailableLocations(
-        assigned.map((l) =>
-          typeof l === 'string'
-            ? { location_id: l, location_name: l }
-            : l,
-        ),
-      )
-      // locationsLoaded already true for manager — no action needed
-    } else if (isMember) {
-      const assigned = user?.assignedLocations ?? []
-      setAvailableLocations(
-        assigned.map((l) =>
-          typeof l === 'string'
-            ? { location_id: l, location_name: l }
-            : l,
-        ),
-      )
+      setAvailableLocations(assigned.map(normalizeLocation))
     }
-  }, []) // mount-only — user object is stable within a session
+  }, [isOwner, isManager, isMember, storeFetchLocations, user?.email, user?.orgId, user?.assignedLocations])
 
   // ── Validate saved location against loaded locations ─────────────────────
   // If the saved default no longer exists (location was deleted), reset to
   // 'all' and remove the stale localStorage entry.
   useEffect(() => {
-    if (!isOwner && !isManager) return
     if (availableLocations.length === 0) return
+
+    if (isMember) {
+      const exists = availableLocations.some(
+        (l) => l.location_id === selectedLocationId,
+      )
+      if (!exists || selectedLocationId === 'all') {
+        setSelectedLocationId(availableLocations[0].location_id)
+      }
+      return
+    }
+
+    if (!isOwner && !isManager) return
     if (selectedLocationId === 'all') return
 
     const exists = availableLocations.some(
@@ -209,7 +239,7 @@ export default function InventoryList() {
       setSelectedLocationId('all')
       if (defaultLocKey) localStorage.removeItem(defaultLocKey)
     }
-  }, [availableLocations, selectedLocationId, isOwner, isManager, defaultLocKey])
+  }, [availableLocations, selectedLocationId, isOwner, isManager, isMember, defaultLocKey])
 
   // ── Fetch inventory ───────────────────────────────────────────────────────
   // Wraps the store action so the component keeps its own loading/refreshing
@@ -239,6 +269,7 @@ export default function InventoryList() {
       } catch {
         setFetchError(t('inventory.error_load'))
       } finally {
+        setHasLoadedOnce(true)
         setFetching(false)
         setRefreshing(false)
       }
@@ -246,12 +277,22 @@ export default function InventoryList() {
     [user.email, user.orgId, t, storeFetchInventory, storeInvalidateInventory],
   )
 
-  // Fetch on mount and whenever the selected location tab changes.
-  // Locations and inventory load in parallel — no gate needed here.
-  // If the validation effect resets selectedLocationId the dep change re-fires.
+  // Fetch on mount and whenever the selected location changes, but only once
+  // the location context has been restored and validated after a hard refresh.
   useEffect(() => {
+    if (isOwner && !locationsLoaded) return
+    if (isMember && availableLocations.length === 0) return
+    if (selectedLocationId !== 'all' && availableLocations.length === 0) return
+
+    if (selectedLocationId !== 'all' && availableLocations.length > 0) {
+      const exists = availableLocations.some(
+        (l) => l.location_id === selectedLocationId,
+      )
+      if (!exists) return
+    }
+
     fetchInventory(selectedLocationId)
-  }, [selectedLocationId, fetchInventory])
+  }, [selectedLocationId, fetchInventory, isOwner, isMember, locationsLoaded, availableLocations])
 
   // ── Loading screen ────────────────────────────────────────────────────────
   // Only shown when there is no stale data to display (fetching === true).
@@ -269,8 +310,25 @@ export default function InventoryList() {
       ? (!locationsLoaded || availableLocations.length > 1)
       : availableLocations.length > 1
 
-  // Show a static location name when there is exactly 1 location — no need to filter.
-  const showSingleLocation = locationsLoaded && availableLocations.length === 1
+  // Show a stable location label when there is no location filter UI.
+  // Start with the selected ID as a safe fallback, then automatically upgrade
+  // to the human-readable name once the location list or item payload rehydrates.
+  const resolvedSelectedLocation =
+    selectedLocationId !== 'all'
+      ? availableLocations.find((l) => l.location_id === selectedLocationId)
+      : null
+
+  const itemLocationFallback =
+    selectedLocationId !== 'all'
+      ? items.find((item) => item.location_id === selectedLocationId)?.location_name
+      : null
+
+  const singleLocationLabel =
+    resolvedSelectedLocation?.location_name ??
+    itemLocationFallback ??
+    (selectedLocationId !== 'all' ? selectedLocationId : null)
+
+  const showSingleLocation = !showLocationFilter && Boolean(singleLocationLabel)
 
   // Client-side search filter applied on top of whatever the server returned
   const filtered = items.filter((item) => {
@@ -340,7 +398,7 @@ export default function InventoryList() {
         {showSingleLocation && (
           <div className={styles.singleLocation}>
             <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
-            <span>{availableLocations[0].location_name}</span>
+            <span>{singleLocationLabel}</span>
           </div>
         )}
 
@@ -408,7 +466,7 @@ export default function InventoryList() {
 
         {/* No items in this location at all — suppressed while a refresh is in-flight
             so stale-empty session data never flashes empty state before real data arrives */}
-        {!fetchError && !refreshing && items.length === 0 && (
+        {!fetchError && hasLoadedOnce && !refreshing && !storeInventoryLoading && items.length === 0 && (
           <div className={styles.empty}>
             <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
             <p className={styles.emptyText}>{t('inventory.empty_location')}</p>
@@ -432,6 +490,7 @@ export default function InventoryList() {
             <span>{t('item_name')}</span>
             <span className={styles.tableHeaderQty}>{t('quantity')}</span>
             <span className={styles.tableHeaderCategory}>{t('category')}</span>
+            <span className={styles.tableHeaderActions}>{t('inventory.actions')}</span>
           </div>
         )}
 
@@ -467,8 +526,8 @@ export default function InventoryList() {
                 </div>
 
                 <div className={styles.itemDetailsRow}>
-                  {item.location_id && locationName(item.location_id) && (
-                    <span className={styles.locationText}>{locationName(item.location_id)}</span>
+                  {item.location_id && locationName(item.location_id, item.location_name) && (
+                    <span className={styles.locationText}>{locationName(item.location_id, item.location_name)}</span>
                   )}
                   {item.barcode && (
                     <span className={styles.barcodeText}>{item.barcode}</span>
@@ -487,6 +546,19 @@ export default function InventoryList() {
                 <span className={`${styles.categoryBadge} ${categoryToneClass}`}>
                   {item.category || '—'}
                 </span>
+              </div>
+
+              <div className={styles.actionsCell}>
+                <Link
+                  to={`/edit/${item.itemId}`}
+                  state={{ item }}
+                  className={styles.editLink}
+                  aria-label={`${t('edit_item')}: ${item.itemName}`}
+                  title={t('edit_item')}
+                >
+                  <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
+                  <span className={styles.editLinkText}>{t('edit_item')}</span>
+                </Link>
               </div>
             </div>
           )

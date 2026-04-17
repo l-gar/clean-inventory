@@ -88,6 +88,7 @@
     "add_first_item": "Agregar un Artículo",
     "error_load": "No se pudo cargar el inventario. Inténtalo de nuevo.",
     "retry": "Intentar de nuevo",
+    "actions": "Acciones",
     "lowStock": "Stock Bajo",
     "outOfStock": "Sin Stock",
     "badgeOk": "OK",
