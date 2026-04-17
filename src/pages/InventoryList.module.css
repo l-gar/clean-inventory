@@ -256,7 +256,7 @@
 
 .tableHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 110px 140px;
+  grid-template-columns: minmax(0, 1.7fr) 110px 140px 92px;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -273,7 +273,8 @@
   text-align: center;
 }
 
-.tableHeaderCategory {
+.tableHeaderCategory,
+.tableHeaderActions {
   text-align: right;
 }
 
@@ -328,7 +329,7 @@
 .item {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 110px 140px;
+  grid-template-columns: minmax(0, 1.7fr) 110px 140px 92px;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -400,6 +401,40 @@
   font-family: monospace;
 }
 
+.editLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--gray-600);
+  text-decoration: none;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.editLink:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  color: var(--green-700);
+  transform: translateY(-1px);
+}
+
+.editLink svg {
+  width: 12px;
+  height: 12px;
+}
+
+.editLinkText {
+  display: inline;
+}
+
 .qtyCell {
   display: flex;
   justify-content: center;
@@ -449,6 +484,13 @@
 
 .categoryCell {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
 }
 
@@ -559,17 +601,24 @@
      row 1 → item name (left)  |  qty (right)
      row 2 → location text     |  category pill (right) */
   .item {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
-      'main qty'
-      'main cat';
+      'main actions qty'
+      'main actions cat';
     padding: 13px 12px;
-    gap: 0 14px;
+    gap: 4px 10px;
     align-items: stretch;
   }
 
   .itemMain {
     grid-area: main;
+  }
+
+  .actionsCell {
+    grid-area: actions;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 2px;
   }
 
   .qtyCell {
@@ -582,8 +631,20 @@
   .categoryCell {
     grid-area: cat;
     justify-content: flex-end;
+    align-items: flex-end;
     align-self: end;
     padding-bottom: 2px;
+  }
+
+  .editLink {
+    width: 34px;
+    min-height: 34px;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .editLinkText {
+    display: none;
   }
 
   .qtyValue {

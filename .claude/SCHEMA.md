@@ -24,7 +24,7 @@ upc | item_name | brand | description | cached_date
 ## Org Inventory Sheet (org owner's Google account)
 
 ### inventory
-item_id | item_name | brand | barcode | quantity | unit | category | location_id | added_by | added_date | last_updated_by | last_updated_date
+item_id | item_name | brand | barcode | quantity | unit | category | location_id | cost_per_unit | expected_jobs | last_restocked_date | item_low_stock_threshold | track_stock | added_by | added_date | last_updated_by | last_updated_date
 
 ### activity_log
 timestamp | action | item_id | item_name | quantity_before | quantity_after | location_id | performed_by | role

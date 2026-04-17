@@ -88,6 +88,7 @@
     "add_first_item": "Add an Item",
     "error_load": "Could not load inventory. Please try again.",
     "retry": "Try Again",
+    "actions": "Actions",
     "lowStock": "Low Stock",
     "outOfStock": "Out of Stock",
     "badgeOk": "OK",
