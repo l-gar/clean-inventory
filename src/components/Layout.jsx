@@ -2,21 +2,22 @@ import { Outlet, NavLink } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  faBell,
   faBoxesStacked,
-  faCirclePlus,
+  faBarcode,
   faGear,
+  faHeartPulse,
   faRightFromBracket,
   faShieldHalved,
+  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import styles from './Layout.module.css'
 
-const navItems = [
+const NAV_ITEMS = [
   {
-    to: '/add',
-    labelKey: 'nav.addItem',
-    icon: <FontAwesomeIcon icon={faCirclePlus} aria-hidden="true" />,
+    to: '/scan-update',
+    labelKey: 'nav.scan_update',
+    icon: <FontAwesomeIcon icon={faBarcode} aria-hidden="true" />,
   },
   {
     to: '/inventory',
@@ -24,10 +25,16 @@ const navItems = [
     icon: <FontAwesomeIcon icon={faBoxesStacked} aria-hidden="true" />,
   },
   {
-    to: '/alerts',
-    labelKey: 'nav.alerts',
-    icon: <FontAwesomeIcon icon={faBell} aria-hidden="true" />,
-    badge: 3,
+    to: '/stock-health',
+    labelKey: 'nav.stock_health',
+    icon: <FontAwesomeIcon icon={faHeartPulse} aria-hidden="true" />,
+    ownerManagerOnly: true,
+  },
+  {
+    to: '/members',
+    labelKey: 'nav.members',
+    icon: <FontAwesomeIcon icon={faUserGroup} aria-hidden="true" />,
+    ownerManagerOnly: true,
   },
   {
     to: '/settings',
@@ -40,17 +47,14 @@ export default function Layout() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
   const isSuperAdmin = user?.role === 'super_admin'
+  const isOwnerOrManager = user?.role === 'org_owner' || user?.role === 'manager'
 
-  const visibleNavItems = isSuperAdmin
-    ? [
-        ...navItems,
-        {
-          to: '/admin',
-          labelKey: 'nav.admin',
-          icon: <FontAwesomeIcon icon={faShieldHalved} aria-hidden="true" />,
-        },
-      ]
-    : navItems
+  const visibleNavItems = [
+    ...NAV_ITEMS.filter((item) => !item.ownerManagerOnly || isOwnerOrManager),
+    ...(isSuperAdmin
+      ? [{ to: '/admin', labelKey: 'nav.admin', icon: <FontAwesomeIcon icon={faShieldHalved} aria-hidden="true" /> }]
+      : []),
+  ]
 
   return (
     <div className={styles.layout}>

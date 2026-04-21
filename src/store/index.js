@@ -2,35 +2,47 @@
  * Centralized Zustand store — single source of truth for all remote data.
  *
  * Rules (from CLAUDE.md):
- *   - Components never call callAppsScript directly for data fetching.
+ *   - Components never call API functions directly for data fetching.
  *     Always go through this store.
- *   - Components CAN call callAppsScript directly for write operations
- *     (add, update, remove) but must call the matching invalidate*() action
- *     immediately after so the next read gets fresh data.
+ *   - Components CAN call write functions from store/api.js directly
+ *     but must call the matching invalidate*() action immediately after
+ *     so the next read gets fresh data.
  *   - Store lives in memory — cleared on logout and page refresh.
  *
  * Cache TTLs:
- *   locations   — 5 minutes
- *   inventory   — 2 minutes
- *   members     — 5 minutes
- *   activityLog — 1 minute
+ *   locations         — 5 minutes
+ *   catalog           — 5 minutes
+ *   inventory (stock) — 2 minutes
+ *   members           — 5 minutes
+ *   stockTransactions — 1 minute
+ *   activityLog       — 1 minute
  *
  * Invalidation rules:
- *   addItem / updateItem / removeItem → invalidateInventory
+ *   addCatalogItem / updateCatalogItem / removeCatalogItem → invalidateCatalog
+ *   addStock / updateStock / deductItem / restockItem / adjustItem / transferItem / removeStock → invalidateInventory
  *   addLocation / updateLocation / removeLocation → invalidateLocations
  *   removeMember → invalidateMembers
  *   logout → clearStore
  */
 
 import { create } from 'zustand'
-import { callAppsScript } from '../utils/appsScript'
+import {
+  apiGetLocations,
+  apiGetCatalogItems,
+  apiGetStockByLocation,
+  apiGetStockTransactions,
+  apiGetOrgMembers,
+  apiGetActivityLog,
+} from './api'
 
 // ── TTL constants ─────────────────────────────────────────────────────────────
 const TTL = {
-  locations:   5 * 60 * 1000,
-  inventory:   2 * 60 * 1000,
-  members:     5 * 60 * 1000,
-  activityLog: 1 * 60 * 1000,
+  locations:         5 * 60 * 1000,
+  catalog:           5 * 60 * 1000,
+  inventory:         2 * 60 * 1000,
+  members:           5 * 60 * 1000,
+  stockTransactions: 1 * 60 * 1000,
+  activityLog:       1 * 60 * 1000,
 }
 
 function isExpired(timestamp, ttl) {
@@ -69,6 +81,25 @@ function locationsSessionKey(email) { return `cleaninv_locations_${email}` }
 function saveLocationsToSession(email, locs) { saveToSession(locationsSessionKey(email), locs) }
 function clearAllLocationsSessionKeys() { clearSessionKeysByPrefix('cleaninv_locations_') }
 
+// inventory — localStorage with 10-min TTL for cross-session stale seeds.
+// Used so switching locations shows the last-known data while fresh data loads.
+const LOCAL_INVENTORY_TTL = 10 * 60 * 1000
+function inventoryLocalKey(email, locationId) { return `cleaninv_inv_local_${email}_${locationId}` }
+function saveInventoryToLocal(email, locationId, items) {
+  try { localStorage.setItem(inventoryLocalKey(email, locationId), JSON.stringify({ items, ts: Date.now() })) } catch { /* quota */ }
+}
+function clearLocalKeysByPrefix(prefix) {
+  try {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k?.startsWith(prefix)) keys.push(k)
+    }
+    keys.forEach((k) => localStorage.removeItem(k))
+  } catch { /* ignore */ }
+}
+function clearAllInventoryLocalKeys() { clearLocalKeysByPrefix('cleaninv_inv_local_') }
+
 // Normalize a location entry to { location_id, location_name }.
 // Handles both snake_case and camelCase field names from Apps Script.
 function normalizeLocation(l) {
@@ -87,10 +118,6 @@ export const useStore = create((set, get) => ({
   locationsLoading: false,
   locationsError:   false,
 
-  /**
-   * Fetch locations for the org. Returns cached data if within TTL.
-   * Throws on error so callers can show their own error UI.
-   */
   fetchLocations: async (email, orgId) => {
     const { locationsFetched, locationsLoading, locations } = get()
     if (!isExpired(locationsFetched, TTL.locations)) return locations
@@ -98,9 +125,8 @@ export const useStore = create((set, get) => ({
 
     set({ locationsLoading: true, locationsError: false })
     try {
-      const data = await callAppsScript('getLocations', { email, orgId })
-      if (data.success === false) throw new Error(data.error ?? 'failed')
-      const locs = (data.locations ?? []).map(normalizeLocation)
+      const raw  = await apiGetLocations({ email, orgId })
+      const locs = raw.map(normalizeLocation)
       saveLocationsToSession(email, locs)
       set({ locations: locs, locationsFetched: Date.now(), locationsLoading: false })
       return locs
@@ -110,10 +136,39 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  /** Clear the locations cache so the next fetchLocations call hits the API. */
   invalidateLocations: () => set({ locationsFetched: null }),
 
-  // ── Inventory ───────────────────────────────────────────────────────────────
+  getLocationName: (locationId, fallbackName = null) => {
+    const { locations } = get()
+    return locations.find((l) => l.location_id === locationId)?.location_name ?? fallbackName ?? locationId ?? null
+  },
+
+  // ── Item catalog ─────────────────────────────────────────────────────────────
+  catalog:        [],
+  catalogFetched: null,
+  catalogLoading: false,
+  catalogError:   false,
+
+  /** Fetch all item definitions for the org. Returns cached data if within TTL. */
+  fetchCatalog: async (email, orgId) => {
+    const { catalogFetched, catalogLoading, catalog } = get()
+    if (!isExpired(catalogFetched, TTL.catalog)) return catalog
+    if (catalogLoading) return catalog
+
+    set({ catalogLoading: true, catalogError: false })
+    try {
+      const items = await apiGetCatalogItems({ email, orgId })
+      set({ catalog: items, catalogFetched: Date.now(), catalogLoading: false })
+      return items
+    } catch (err) {
+      set({ catalogError: true, catalogLoading: false })
+      throw err
+    }
+  },
+
+  invalidateCatalog: () => set({ catalogFetched: null }),
+
+  // ── Inventory (stock by location) ────────────────────────────────────────────
   inventory:           [],
   inventoryFetched:    null,
   inventoryLoading:    false,
@@ -121,38 +176,76 @@ export const useStore = create((set, get) => ({
   inventoryLocationId: null, // tracks which locationId the cache is for
 
   /**
-   * Fetch inventory for a specific locationId (or 'all').
+   * Fetch stock records for a specific locationId (or 'all').
    * Automatically invalidates the cache when locationId changes.
    * Throws on error so callers can show their own error UI.
    */
   fetchInventory: async (email, orgId, locationId) => {
     const state = get()
 
-    // If the requested location changed, bust the stale cache immediately
     if (state.inventoryLocationId !== locationId) {
-      set({ inventoryFetched: null, inventory: [], inventoryLocationId: locationId })
+      // Atomic reset: clear stale data + mark loading so the sync effect in
+      // InventoryList won't wipe the component's stale-seed items prematurely.
+      set({ inventoryFetched: null, inventory: [], inventoryLocationId: locationId, inventoryLoading: true, inventoryError: false })
+    } else {
+      const current = get()
+      if (!isExpired(current.inventoryFetched, TTL.inventory)) return current.inventory
+      if (current.inventoryLoading) return current.inventory
+      set({ inventoryLoading: true, inventoryError: false })
     }
 
-    const current = get()
-    if (!isExpired(current.inventoryFetched, TTL.inventory)) return current.inventory
-    if (current.inventoryLoading) return current.inventory
-
-    set({ inventoryLoading: true, inventoryError: false })
     try {
-      const data = await callAppsScript('getInventory', { email, orgId, locationId })
-      if (data.success === false) throw new Error(data.error ?? 'failed')
-      const items = data.items ?? []
+      const items = await apiGetStockByLocation({ email, orgId, locationId })
       saveInventoryToSession(email, locationId, items)
+      saveInventoryToLocal(email, locationId, items)
+      // Discard result if the user switched locations while this fetch was in-flight
+      if (get().inventoryLocationId !== locationId) return get().inventory
       set({ inventory: items, inventoryFetched: Date.now(), inventoryLoading: false })
       return items
     } catch (err) {
-      set({ inventoryError: true, inventoryLoading: false })
+      if (get().inventoryLocationId === locationId) {
+        set({ inventoryError: true, inventoryLoading: false })
+      }
       throw err
     }
   },
 
-  /** Clear the inventory cache so the next fetchInventory call hits the API. */
   invalidateInventory: () => set({ inventoryFetched: null }),
+
+  // ── Stock transactions ────────────────────────────────────────────────────────
+  stockTransactions:           [],
+  stockTransactionsFetched:    null,
+  stockTransactionsLoading:    false,
+  stockTransactionsError:      false,
+  stockTransactionsLocationId: null,
+
+  /**
+   * Fetch stock transaction history for a locationId (or 'all').
+   * Automatically invalidates when locationId changes.
+   */
+  fetchStockTransactions: async (email, orgId, locationId) => {
+    const state = get()
+
+    if (state.stockTransactionsLocationId !== locationId) {
+      set({ stockTransactionsFetched: null, stockTransactions: [], stockTransactionsLocationId: locationId })
+    }
+
+    const current = get()
+    if (!isExpired(current.stockTransactionsFetched, TTL.stockTransactions)) return current.stockTransactions
+    if (current.stockTransactionsLoading) return current.stockTransactions
+
+    set({ stockTransactionsLoading: true, stockTransactionsError: false })
+    try {
+      const transactions = await apiGetStockTransactions({ email, orgId, locationId })
+      set({ stockTransactions: transactions, stockTransactionsFetched: Date.now(), stockTransactionsLoading: false })
+      return transactions
+    } catch (err) {
+      set({ stockTransactionsError: true, stockTransactionsLoading: false })
+      throw err
+    }
+  },
+
+  invalidateStockTransactions: () => set({ stockTransactionsFetched: null }),
 
   // ── Org members ─────────────────────────────────────────────────────────────
   members:        [],
@@ -160,10 +253,6 @@ export const useStore = create((set, get) => ({
   membersLoading: false,
   membersError:   false,
 
-  /**
-   * Fetch org members. Returns cached data if within TTL.
-   * Throws on error so callers can show their own error UI.
-   */
   fetchMembers: async (email, orgId) => {
     const { membersFetched, membersLoading, members } = get()
     if (!isExpired(membersFetched, TTL.members)) return members
@@ -171,9 +260,7 @@ export const useStore = create((set, get) => ({
 
     set({ membersLoading: true, membersError: false })
     try {
-      const data = await callAppsScript('getOrgMembers', { email, orgId })
-      if (data.success === false) throw new Error()
-      const list = data.members ?? []
+      const list = await apiGetOrgMembers({ email, orgId })
       set({ members: list, membersFetched: Date.now(), membersLoading: false })
       return list
     } catch (err) {
@@ -182,7 +269,6 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  /** Clear the members cache so the next fetchMembers call hits the API. */
   invalidateMembers: () => set({ membersFetched: null }),
 
   // ── Activity log ────────────────────────────────────────────────────────────
@@ -195,7 +281,6 @@ export const useStore = create((set, get) => ({
   /**
    * Fetch activity log for a locationId (or 'all').
    * Automatically invalidates when locationId changes.
-   * Throws on error so callers can show their own error UI.
    */
   fetchActivityLog: async (email, orgId, locationId) => {
     const state = get()
@@ -210,9 +295,7 @@ export const useStore = create((set, get) => ({
 
     set({ activityLogLoading: true, activityLogError: false })
     try {
-      const data = await callAppsScript('getActivityLog', { email, orgId, locationId })
-      if (data.success === false) throw new Error()
-      const log = data.log ?? data.entries ?? []
+      const log = await apiGetActivityLog({ email, orgId, locationId })
       set({ activityLog: log, activityLogFetched: Date.now(), activityLogLoading: false })
       return log
     } catch (err) {
@@ -221,7 +304,6 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  /** Clear the activity log cache so the next fetchActivityLog call hits the API. */
   invalidateActivityLog: () => set({ activityLogFetched: null }),
 
   // ── Clear everything (call on logout) ───────────────────────────────────────
@@ -235,11 +317,14 @@ export const useStore = create((set, get) => ({
     // from the previous user is never shown to the next user on this device.
     clearAllInventorySessionKeys()
     clearAllLocationsSessionKeys()
+    clearAllInventoryLocalKeys()
     set({
-      locations: [],        locationsFetched: null,    locationsLoading: false,    locationsError: false,
-      inventory: [],        inventoryFetched: null,    inventoryLoading: false,    inventoryError: false,    inventoryLocationId: null,
-      members:   [],        membersFetched:   null,    membersLoading:   false,    membersError:   false,
-      activityLog: [],      activityLogFetched: null,  activityLogLoading: false,  activityLogError: false,  activityLogLocationId: null,
+      locations:        [], locationsFetched: null,            locationsLoading: false,         locationsError: false,
+      catalog:          [], catalogFetched: null,              catalogLoading: false,            catalogError: false,
+      inventory:        [], inventoryFetched: null,            inventoryLoading: false,          inventoryError: false,          inventoryLocationId: null,
+      members:          [], membersFetched: null,              membersLoading: false,            membersError: false,
+      stockTransactions:[], stockTransactionsFetched: null,    stockTransactionsLoading: false,  stockTransactionsError: false,   stockTransactionsLocationId: null,
+      activityLog:      [], activityLogFetched: null,          activityLogLoading: false,        activityLogError: false,         activityLogLocationId: null,
     })
   },
 }))

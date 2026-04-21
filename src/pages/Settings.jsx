@@ -104,6 +104,9 @@ export default function Settings() {
     ? `cleaninv_default_location_${user.email}`
     : null
 
+  const [thresholdSaving, setThresholdSaving] = useState(false)
+  const [thresholdError, setThresholdError]   = useState('')
+
   const [prefs, setPrefs] = useState(() => ({
     lowStockAlerts: true,
     outOfStockAlerts: true,
@@ -113,7 +116,7 @@ export default function Settings() {
     defaultLocation: defaultLocKey
       ? (localStorage.getItem(defaultLocKey) ?? '')
       : '',
-    lowStockThreshold: '20',
+    lowStockThreshold: String(user?.low_stock_threshold ?? user?.lowStockThreshold ?? '20'),
   }))
 
   useEffect(() => {
@@ -133,6 +136,27 @@ export default function Settings() {
 
   function set(key) {
     return (val) => setPrefs((p) => ({ ...p, [key]: val }))
+  }
+
+  const savedThreshold = String(user?.low_stock_threshold ?? user?.lowStockThreshold ?? '20')
+  const thresholdDirty = String(prefs.lowStockThreshold) !== savedThreshold
+
+  async function handleThresholdSave() {
+    if (!thresholdDirty) return
+    setThresholdSaving(true)
+    setThresholdError('')
+    try {
+      await callAppsScript('updateThreshold', {
+        email: user.email,
+        orgId: user.orgId,
+        threshold: prefs.lowStockThreshold,
+      })
+      updateUser({ low_stock_threshold: prefs.lowStockThreshold })
+    } catch {
+      setThresholdError(t('settings.alerts.thresholdError'))
+    } finally {
+      setThresholdSaving(false)
+    }
   }
 
   return (
@@ -271,25 +295,42 @@ export default function Settings() {
             >
               <Toggle checked={prefs.pushNotifications} onChange={set('pushNotifications')} />
             </SettingsRow> */}
-            <div className={styles.divider} />
-            <div className={styles.row}>
-              <div className={styles.rowText}>
-                <label className={styles.rowLabel} htmlFor="threshold">{t('settings.alerts.threshold')}</label>
-                <span className={styles.rowDesc}>{t('settings.alerts.thresholdDesc')}</span>
-              </div>
-              <div className={styles.numericInput}>
-                <input
-                  id="threshold"
-                  type="number"
-                  min="0"
-                  max="100"
-                  className={styles.numberField}
-                  value={prefs.lowStockThreshold}
-                  onChange={(e) => set('lowStockThreshold')(e.target.value)}
-                />
-                <span className={styles.numberSuffix}>%</span>
-              </div>
-            </div>
+            {isOwner && (
+              <>
+                <div className={styles.divider} />
+                <div className={styles.thresholdBlock}>
+                  <div className={styles.row}>
+                    <div className={styles.rowText}>
+                      <label className={styles.rowLabel} htmlFor="threshold">{t('settings.alerts.threshold')}</label>
+                      <span className={styles.rowDesc}>{t('settings.alerts.thresholdDesc')}</span>
+                      {thresholdError && <span className={styles.rowError}>{thresholdError}</span>}
+                    </div>
+                    <div className={styles.numericInput}>
+                      <input
+                        id="threshold"
+                        type="number"
+                        min="0"
+                        max="100"
+                        className={styles.numberField}
+                        value={prefs.lowStockThreshold}
+                        onChange={(e) => { set('lowStockThreshold')(e.target.value); setThresholdError('') }}
+                      />
+                      <span className={styles.numberSuffix}>%</span>
+                    </div>
+                  </div>
+                  {thresholdDirty && (
+                    <button
+                      type="button"
+                      className={styles.thresholdSaveBtn}
+                      onClick={handleThresholdSave}
+                      disabled={thresholdSaving}
+                    >
+                      {thresholdSaving ? t('settings.business.orgNameSaving') : t('settings.business.orgNameSave')}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -330,14 +371,14 @@ export default function Settings() {
         )}
 
         {/* Data */}
-        <section className={styles.section}>
+        {/* <section className={styles.section}>
           <h2 className={styles.sectionTitle}>{t('settings.sections.data')}</h2>
           <div className={styles.card}>
             <button className={styles.actionRow} type="button">
               <span>{t('settings.data.exportCsv')}</span>
               <FontAwesomeIcon icon={faDownload} aria-hidden="true" />
             </button>
-            {/* <div className={styles.divider} />
+            <div className={styles.divider} />
             <button className={styles.actionRow} type="button">
               <span>Import from CSV</span>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -345,8 +386,8 @@ export default function Settings() {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-            </button> */}
-            {/* <div className={styles.divider} />
+            </button>
+            <div className={styles.divider} />
             <button className={`${styles.actionRow} ${styles.actionDanger}`} type="button">
               <span>{t('settings.data.clearAll')}</span>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -356,9 +397,9 @@ export default function Settings() {
                 <path d="M14 11v6" />
                 <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
               </svg>
-            </button> */}
+            </button>
           </div>
-        </section>
+        </section> */}
 
         <p className={styles.version}>CleanInv v0.1.0 · No backend connected</p>
       </div>

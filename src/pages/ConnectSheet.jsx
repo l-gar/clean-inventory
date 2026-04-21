@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { useGoogleLogin } from '@react-oauth/google'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faCircleCheck,
@@ -14,21 +15,32 @@ import styles from './ConnectSheet.module.css'
 
 const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL
 
-const INVENTORY_HEADERS =
-  'item_id, item_name, brand, barcode, quantity, unit, category, ' +
-  'location_id, cost_per_unit, expected_jobs, last_restocked_date, ' +
-  'item_low_stock_threshold, track_stock, added_by, added_date, ' +
-  'last_updated_by, last_updated_date'
+const GOOGLE_SCOPES = [
+  'openid',
+  'email',
+  'profile',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file',
+].join(' ')
 
-const ACTIVITY_HEADERS =
-  'timestamp, action, item_id, item_name, quantity_before, ' +
-  'quantity_after, location_id, performed_by, role'
+const CATALOG_HEADER_ROW = [
+  'catalog_id', 'org_id', 'item_name', 'brand', 'barcode', 'sku', 'description',
+  'image_url', 'unit', 'category', 'supplier', 'cost_per_unit', 'reorder_point',
+  'reorder_quantity', 'track_stock', 'added_by', 'added_date',
+  'last_updated_by', 'last_updated_date',
+]
 
 const INVENTORY_HEADER_ROW = [
-  'item_id', 'item_name', 'brand', 'barcode', 'quantity', 'unit',
-  'category', 'location_id', 'cost_per_unit', 'expected_jobs',
-  'last_restocked_date', 'item_low_stock_threshold', 'track_stock',
+  'stock_id', 'catalog_id', 'location_id', 'quantity', 'cost_per_unit_override',
+  'item_low_stock_threshold', 'expected_jobs', 'last_restocked_date',
   'added_by', 'added_date', 'last_updated_by', 'last_updated_date',
+]
+
+const TRANSACTIONS_HEADER_ROW = [
+  'transaction_id', 'catalog_id', 'stock_id', 'location_id', 'transaction_type',
+  'quantity_before', 'quantity_after', 'quantity_delta', 'cost_per_unit_at_time',
+  'transfer_to_location_id', 'reference_id', 'reference_type',
+  'performed_by', 'role', 'notes', 'timestamp',
 ]
 
 const ACTIVITY_HEADER_ROW = [
@@ -39,18 +51,38 @@ const ACTIVITY_HEADER_ROW = [
 
 export default function ConnectSheet() {
   const { t } = useTranslation()
-  const { user, accessToken, logout, updateUser } = useAuth()
+  const { user, accessToken, logout, updateUser, login } = useAuth()
   const navigate = useNavigate()
 
   // ── Auto-create state ─────────────────────────────────────────────────────
   const [creating, setCreating] = useState(false)
   const [loadingMsg, setLoadingMsg] = useState('')
   const [createError, setCreateError] = useState(null)
+  const [needsGoogleReconnect, setNeedsGoogleReconnect] = useState(false)
 
   // ── Manual connect state ──────────────────────────────────────────────────
   const [sheetId, setSheetId] = useState('')
   const [connecting, setConnecting] = useState(false)
   const [connectError, setConnectError] = useState(null)
+
+  const reconnectGoogle = useGoogleLogin({
+    flow: 'implicit',
+    scope: GOOGLE_SCOPES,
+    prompt: 'consent',
+    onSuccess: async (tokenResponse) => {
+      try {
+        await login(tokenResponse)
+        await handleAutoCreate(tokenResponse.access_token)
+      } catch {
+        setNeedsGoogleReconnect(true)
+        setCreateError('We still could not access Google Sheets or Drive. Please try again.')
+      }
+    },
+    onError: () => {
+      setNeedsGoogleReconnect(true)
+      setCreateError('Google permissions were not granted. Please allow access and try again.')
+    },
+  })
 
   // ── Loading screens ───────────────────────────────────────────────────────
   if (creating) {
@@ -61,9 +93,10 @@ export default function ConnectSheet() {
   }
 
   // ── Auto-create handler ───────────────────────────────────────────────────
-  async function handleAutoCreate() {
+  async function handleAutoCreate(tokenOverride = accessToken) {
     setCreating(true)
     setCreateError(null)
+    setNeedsGoogleReconnect(false)
 
     try {
       // Step 1 — create the spreadsheet with both tabs
@@ -71,13 +104,15 @@ export default function ConnectSheet() {
       const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${tokenOverride}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           properties: { title: `${user.orgName} Inventory` },
           sheets: [
+            { properties: { title: 'item_catalog' } },
             { properties: { title: 'inventory' } },
+            { properties: { title: 'stock_transactions' } },
             { properties: { title: 'activity_log' } },
           ],
         }),
@@ -86,6 +121,9 @@ export default function ConnectSheet() {
       if (!createRes.ok) {
         const errBody = await createRes.text()
         console.error('[ConnectSheet] Create sheet failed:', createRes.status, errBody)
+        if (createRes.status === 401 || createRes.status === 403) {
+          throw new Error('google_permissions')
+        }
         throw new Error('create_sheet')
       }
 
@@ -99,14 +137,16 @@ export default function ConnectSheet() {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${tokenOverride}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             valueInputOption: 'RAW',
             data: [
-              { range: 'inventory!A1',    values: [INVENTORY_HEADER_ROW] },
-              { range: 'activity_log!A1', values: [ACTIVITY_HEADER_ROW] },
+              { range: 'item_catalog!A1',       values: [CATALOG_HEADER_ROW] },
+              { range: 'inventory!A1',           values: [INVENTORY_HEADER_ROW] },
+              { range: 'stock_transactions!A1',  values: [TRANSACTIONS_HEADER_ROW] },
+              { range: 'activity_log!A1',        values: [ACTIVITY_HEADER_ROW] },
             ],
           }),
         },
@@ -115,6 +155,9 @@ export default function ConnectSheet() {
       if (!headersRes.ok) {
         const errBody = await headersRes.text()
         console.error('[ConnectSheet] Headers failed:', headersRes.status, errBody)
+        if (headersRes.status === 401 || headersRes.status === 403) {
+          throw new Error('google_permissions')
+        }
         throw new Error('create_headers')
       }
 
@@ -127,7 +170,7 @@ export default function ConnectSheet() {
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${tokenOverride}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -141,6 +184,9 @@ export default function ConnectSheet() {
       if (!shareRes.ok) {
         const errBody = await shareRes.text()
         console.error('[ConnectSheet] Share failed:', shareRes.status, errBody)
+        if (shareRes.status === 401 || shareRes.status === 403) {
+          throw new Error('google_permissions')
+        }
         throw new Error('create_share')
       }
 
@@ -161,13 +207,18 @@ export default function ConnectSheet() {
 
       console.log('[ConnectSheet] connectSheet success — navigating to app')
       updateUser({ orgStatus: 'active', sheetId: spreadsheetId })
-      navigate('/add', { replace: true })
+      navigate('/scan-update', { replace: true })
     } catch (err) {
-      const knownKeys = ['create_sheet', 'create_headers', 'create_share', 'connect']
-      const msgKey = knownKeys.includes(err.message)
-        ? `connect_sheet.error_${err.message}`
-        : 'connect_sheet.error_create_generic'
-      setCreateError(t(msgKey))
+      if (err.message === 'google_permissions') {
+        setNeedsGoogleReconnect(true)
+        setCreateError('Google Sheets or Drive access is missing or expired. Reconnect permissions to continue.')
+      } else {
+        const knownKeys = ['create_sheet', 'create_headers', 'create_share', 'connect']
+        const msgKey = knownKeys.includes(err.message)
+          ? `connect_sheet.error_${err.message}`
+          : 'connect_sheet.error_create_generic'
+        setCreateError(t(msgKey))
+      }
     } finally {
       setCreating(false)
     }
@@ -197,7 +248,7 @@ export default function ConnectSheet() {
       }
 
       updateUser({ orgStatus: 'active', sheetId: trimmed })
-      navigate('/add', { replace: true })
+      navigate('/scan-update', { replace: true })
     } catch {
       setConnectError(t('connect_sheet.error_generic'))
     } finally {
@@ -241,10 +292,19 @@ export default function ConnectSheet() {
               <button
                 type="button"
                 className={styles.btnRetry}
-                onClick={handleAutoCreate}
+                onClick={() => handleAutoCreate()}
               >
                 {t('connect_sheet.try_again')}
               </button>
+              {needsGoogleReconnect && (
+                <button
+                  type="button"
+                  className={styles.btnRetry}
+                  onClick={() => reconnectGoogle()}
+                >
+                  Reconnect Google Access
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -273,7 +333,9 @@ export default function ConnectSheet() {
               <span className={styles.stepTitle}>{t('connect_sheet.step2_title')}</span>
               <span className={styles.stepText}>{t('connect_sheet.step2_body')}</span>
               <div className={styles.codeBlock}>
+                item_catalog<br />
                 inventory<br />
+                stock_transactions<br />
                 activity_log
               </div>
             </div>
@@ -284,7 +346,18 @@ export default function ConnectSheet() {
             <div className={styles.stepBody}>
               <span className={styles.stepTitle}>{t('connect_sheet.step3_title')}</span>
               <span className={styles.stepText}>{t('connect_sheet.step3_body')}</span>
-              <div className={styles.codeBlock}>{INVENTORY_HEADERS}</div>
+              <div className={styles.codeBlock}>
+                <strong>item_catalog</strong><br />
+                {CATALOG_HEADER_ROW.join(', ')}
+              </div>
+              <div className={styles.codeBlock}>
+                <strong>inventory</strong><br />
+                {INVENTORY_HEADER_ROW.join(', ')}
+              </div>
+              <div className={styles.codeBlock}>
+                <strong>stock_transactions</strong><br />
+                {TRANSACTIONS_HEADER_ROW.join(', ')}
+              </div>
             </div>
           </div>
 
@@ -293,7 +366,10 @@ export default function ConnectSheet() {
             <div className={styles.stepBody}>
               <span className={styles.stepTitle}>{t('connect_sheet.step4_title')}</span>
               <span className={styles.stepText}>{t('connect_sheet.step4_body')}</span>
-              <div className={styles.codeBlock}>{ACTIVITY_HEADERS}</div>
+              <div className={styles.codeBlock}>
+                <strong>activity_log</strong><br />
+                {ACTIVITY_HEADER_ROW.join(', ')}
+              </div>
             </div>
           </div>
 

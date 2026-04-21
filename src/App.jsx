@@ -4,9 +4,9 @@ import { useAuth } from './context/AuthContext'
 import { callAppsScript } from './utils/appsScript'
 import Layout from './components/Layout'
 import LoadingScreen from './components/LoadingScreen'
-import AddItem from './pages/AddItem'
+import ScanUpdate from './pages/ScanUpdate'
 import InventoryList from './pages/InventoryList'
-import Alerts from './pages/Alerts'
+import StockHealth from './pages/StockHealth'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import PendingApproval from './pages/PendingApproval'
@@ -14,6 +14,8 @@ import RegisterOrg from './pages/RegisterOrg'
 import ConnectSheet from './pages/ConnectSheet'
 import Locations from './pages/Locations'
 import EditItem from './pages/EditItem'
+import MembersPage from './pages/MembersPage'
+import JoinPage from './pages/JoinPage'
 
 function App() {
   const { user, loading, hasLocations, setHasLocations } = useAuth()
@@ -81,7 +83,7 @@ function App() {
           user.role === 'new_user'     ? <Navigate to="/register-org" replace /> :
           needsSheet                   ? <Navigate to="/connect-sheet" replace /> :
           needsLocations               ? <Navigate to="/locations" replace /> :
-                                         <Navigate to="/add" replace />
+                                         <Navigate to="/scan-update" replace />
         }
       />
 
@@ -90,7 +92,7 @@ function App() {
         path="/pending"
         element={
           !user                        ? <Navigate to="/login" replace /> :
-          user.role !== 'pending'      ? <Navigate to="/add" replace /> :
+          user.role !== 'pending'      ? <Navigate to="/scan-update" replace /> :
                                          <PendingApproval />
         }
       />
@@ -101,7 +103,7 @@ function App() {
         element={
           !user                        ? <Navigate to="/login" replace /> :
           user.role === 'pending'      ? <Navigate to="/pending" replace /> :
-          user.role !== 'new_user'     ? <Navigate to="/add" replace /> :
+          user.role !== 'new_user'     ? <Navigate to="/scan-update" replace /> :
                                          <RegisterOrg />
         }
       />
@@ -111,7 +113,7 @@ function App() {
         path="/connect-sheet"
         element={
           !user                        ? <Navigate to="/login" replace /> :
-          !needsSheet                  ? <Navigate to="/add" replace /> :
+          !needsSheet                  ? <Navigate to="/scan-update" replace /> :
                                          <ConnectSheet />
         }
       />
@@ -126,6 +128,9 @@ function App() {
       {needsLocations && (
         <Route path="/locations" element={<Locations />} />
       )}
+
+      {/* Public join route — accessible without auth */}
+      <Route path="/join" element={<JoinPage />} />
 
       {/*
         Main app — any authenticated user whose role is not a holding state
@@ -143,12 +148,20 @@ function App() {
                                          <Layout />
         }
       >
-        <Route index element={<Navigate to={needsLocations ? '/locations' : '/add'} replace />} />
-        <Route path="add" element={needsLocations ? <Navigate to="/locations" replace /> : <AddItem />} />
+        <Route index element={<Navigate to={needsLocations ? '/locations' : '/scan-update'} replace />} />
+        <Route path="scan-update" element={needsLocations ? <Navigate to="/locations" replace /> : <ScanUpdate />} />
         <Route path="edit/:itemId" element={needsLocations ? <Navigate to="/locations" replace /> : <EditItem />} />
         <Route path="inventory" element={needsLocations ? <Navigate to="/locations" replace /> : <InventoryList />} />
-        <Route path="alerts" element={needsLocations ? <Navigate to="/locations" replace /> : <Alerts />} />
+        <Route path="stock-health" element={needsLocations ? <Navigate to="/locations" replace /> : <StockHealth />} />
         <Route path="settings" element={<Settings />} />
+        <Route
+          path="members"
+          element={
+            (user?.role !== 'org_owner' && user?.role !== 'manager')
+              ? <Navigate to="/scan-update" replace />
+              : <MembersPage />
+          }
+        />
 
         {/*
           Locations management — accessible from Settings once the user has
@@ -160,7 +173,7 @@ function App() {
           path="locations"
           element={
             (user?.role !== 'org_owner' && user?.role !== 'manager')
-              ? <Navigate to="/add" replace />
+              ? <Navigate to="/scan-update" replace />
               : <Locations />
           }
         />

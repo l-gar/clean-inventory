@@ -1,0 +1,26 @@
+.splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px 32px;
+  text-align: center;
+}
+
+.icon {
+  font-size: 3.5rem;
+  color: var(--green-500);
+}
+
+.message {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green-700);
+  margin: 0;
+}
+
+.detail {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  margin: -8px 0 0;
+}

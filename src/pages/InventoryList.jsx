@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -8,10 +8,13 @@ import {
   faLocationDot,
   faMagnifyingGlass,
   faPenToSquare,
+  faRightLeft,
   faSpinner,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
+import { callAppsScript } from '../utils/appsScript'
 import LoadingScreen from '../components/LoadingScreen'
 import styles from './InventoryList.module.css'
 
@@ -39,6 +42,18 @@ function readSessionLocations(email) {
   }
 }
 
+function readLocalItems(email, locationId) {
+  if (!email || !locationId) return null
+  try {
+    const raw = localStorage.getItem(`cleaninv_inv_local_${email}_${locationId}`)
+    if (!raw) return null
+    const { items, ts } = JSON.parse(raw)
+    return Date.now() - ts <= 10 * 60 * 1000 ? items : null
+  } catch {
+    return null
+  }
+}
+
 function normalizeLocation(location) {
   if (typeof location === 'string') {
     return { location_id: location, location_name: location }
@@ -51,6 +66,29 @@ function normalizeLocation(location) {
     ...location,
     location_id: id,
     location_name: name,
+  }
+}
+
+function normalizeItem(item) {
+  return {
+    ...item,
+    itemId:    item.stock_id    ?? item.stockId    ?? item.itemId    ?? '',
+    itemName:  item.item_name   ?? item.itemName   ?? '',
+    barcode:   item.barcode     ?? item.sku        ?? '',
+    category:  item.category    ?? '',
+    quantity:  item.quantity    ?? 0,
+    unit:      item.unit        ?? '',
+    location_id:   item.location_id   ?? item.locationId   ?? '',
+    location_name: item.location_name ?? item.locationName ?? '',
+    lowStockThreshold: Number(
+      item.item_low_stock_threshold ?? item.itemLowStockThreshold ??
+      item.minQuantity              ?? item.min_quantity           ?? 0
+    ),
+    track_stock:   (item.track_stock == null && item.trackStock == null)
+      ? true
+      : item.track_stock === true || item.trackStock === true ||
+        String(item.track_stock ?? item.trackStock ?? '').toUpperCase() === 'TRUE',
+    reorder_point: Number(item.reorder_point ?? item.reorderPoint ?? 0),
   }
 }
 
@@ -89,6 +127,67 @@ function RefreshIcon({ spinning }) {
   )
 }
 
+function TransferSheet({ item, destinations, dest, qty, maxQty, transferring, error, onDestChange, onQtyChange, onClose, onConfirm, t }) {
+  const getLocationName = useStore((s) => s.getLocationName)
+  return (
+    <>
+      <div className={styles.modalBackdrop} onClick={onClose} />
+      <div className={styles.transferSheet} role="dialog" aria-modal="true">
+        <div className={styles.transferHeader}>
+          <h2 className={styles.transferTitle}>{t('inventory.transferTitle')}</h2>
+          <button type="button" className={styles.transferClose} onClick={onClose} aria-label={t('cancel')}>
+            <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
+          </button>
+        </div>
+        <div className={styles.transferBody}>
+          <p className={styles.transferItemName}>{item.itemName}</p>
+          <div className={styles.transferField}>
+            <span className={styles.transferLabel}>{t('inventory.transferFrom')}</span>
+            <div className={styles.transferReadOnly}>{getLocationName(item.location_id, item.location_name)}</div>
+          </div>
+          <div className={styles.transferField}>
+            <label className={styles.transferLabel} htmlFor="xferDest">{t('inventory.transferTo')}</label>
+            <select id="xferDest" className={styles.transferSelect} value={dest} onChange={(e) => onDestChange(e.target.value)}>
+              {destinations.map((loc) => (
+                <option key={loc.location_id} value={loc.location_id}>{loc.location_name}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.transferField}>
+            <label className={styles.transferLabel} htmlFor="xferQty">
+              {t('inventory.transferQty')}
+              {maxQty > 0 && <span className={styles.transferMax}> ({t('inventory.transferMax', { max: maxQty })})</span>}
+            </label>
+            <input
+              id="xferQty"
+              type="number"
+              min="1"
+              max={maxQty}
+              className={styles.transferInput}
+              value={qty}
+              onChange={(e) => onQtyChange(e.target.value)}
+            />
+          </div>
+          {error && <p className={styles.transferError}>{error}</p>}
+        </div>
+        <div className={styles.transferFooter}>
+          <button type="button" className={styles.transferCancelBtn} onClick={onClose} disabled={transferring}>
+            {t('cancel')}
+          </button>
+          <button
+            type="button"
+            className={styles.transferSubmitBtn}
+            onClick={onConfirm}
+            disabled={transferring || !dest || qty < 1 || qty > maxQty}
+          >
+            {transferring ? t('inventory.transferring') : t('inventory.transferConfirm')}
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function InventoryList() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -101,11 +200,15 @@ export default function InventoryList() {
   // Stored as low_stock_threshold (snake) or lowStockThreshold (camel).
   const threshold = Number(user?.lowStockThreshold ?? user?.low_stock_threshold ?? 5)
 
-  const storeFetchLocations    = useStore((s) => s.fetchLocations)
-  const storeFetchInventory    = useStore((s) => s.fetchInventory)
+  const storeFetchLocations      = useStore((s) => s.fetchLocations)
+  const storeFetchInventory      = useStore((s) => s.fetchInventory)
   const storeInvalidateInventory = useStore((s) => s.invalidateInventory)
-  const storeInventory         = useStore((s) => s.inventory)
-  const storeInventoryLoading  = useStore((s) => s.inventoryLoading)
+  const storeInventory           = useStore((s) => s.inventory)
+  const storeInventoryLoading    = useStore((s) => s.inventoryLoading)
+  const storeInventoryLocationId = useStore((s) => s.inventoryLocationId)
+  const getLocationName          = useStore((s) => s.getLocationName)
+
+  const fetchSerialRef = useRef(0)
 
   // ── Location filter state ─────────────────────────────────────────────────
   // availableLocations: [{location_id, location_name}] used to render tabs
@@ -167,27 +270,74 @@ export default function InventoryList() {
   // flash and no full-screen loader when cached data exists.
   // Both initialisers share the same two synchronous sessionStorage reads —
   // cheap enough that a ref isn't worth the complexity.
-  const [items, setItems]       = useState(() => readSessionItems(user?.email, initialLocationId) ?? [])
-  // Show the full-screen loader only when there is no stale data to display.
-  const [fetching, setFetching] = useState(() => readSessionItems(user?.email, initialLocationId) === null)
+  const [items, setItems]       = useState(() => readSessionItems(user?.email, initialLocationId) ?? readLocalItems(user?.email, initialLocationId) ?? [])
+  // Show the full-screen loader only when there is no stale data at all to display.
+  const [fetching, setFetching] = useState(() => readSessionItems(user?.email, initialLocationId) === null && readLocalItems(user?.email, initialLocationId) === null)
   const [fetchError, setFetchError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
-  // Keep the rendered list in sync with the shared store once loading settles,
-  // but do not wipe session-seeded items with an empty store during startup.
+  const [transferTarget, setTransferTarget] = useState(null)
+  const [transferDest, setTransferDest]     = useState('')
+  const [transferQty, setTransferQty]       = useState(1)
+  const [transferring, setTransferring]     = useState(false)
+  const [transferError, setTransferError]   = useState('')
+
+  // Keep the rendered list in sync with external store updates (e.g. after an
+  // edit in another view). Guards prevent three bad cases:
+  //   1. storeInventoryLoading — store cleared + loading, stale seed would be wiped
+  //   2. wrong location — store's data is for a different location tab
+  //   3. empty store — let the fetch callback set items; empty is only valid from it
   useEffect(() => {
     if (storeInventoryLoading) return
-    if (storeInventory.length > 0 || hasLoadedOnce) {
-      setItems(storeInventory)
-    }
-  }, [storeInventory, storeInventoryLoading, hasLoadedOnce])
+    if (storeInventoryLocationId !== selectedLocationId) return
+    if (storeInventory.length === 0) return
+    setItems(storeInventory)
+  }, [storeInventory, storeInventoryLoading, storeInventoryLocationId, selectedLocationId])
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  // Resolve a location_id to a human-readable name for the location tag.
-  function locationName(locationId, fallbackName = null) {
-    return availableLocations.find((l) => l.location_id === locationId)?.location_name ?? fallbackName ?? locationId ?? null
+  useEffect(() => {
+    if (!transferTarget) return
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [transferTarget])
+
+  
+
+  function openTransfer(item) {
+    const dests = availableLocations.filter((l) => l.location_id !== item.location_id)
+    setTransferTarget(item)
+    setTransferDest(dests[0]?.location_id ?? '')
+    setTransferQty(1)
+    setTransferError('')
+  }
+
+  function closeTransfer() {
+    setTransferTarget(null)
+    setTransferError('')
+  }
+
+  async function handleTransfer() {
+    if (!transferTarget || !transferDest || transferQty < 1) return
+    setTransferring(true)
+    setTransferError('')
+    try {
+      await callAppsScript('transferItem', {
+        email: user.email,
+        orgId: user.orgId,
+        fromStockId: transferTarget.itemId,
+        catalogId: String(transferTarget.catalog_id ?? transferTarget.catalogId ?? ''),
+        toLocationId: transferDest,
+        quantity: String(transferQty),
+      })
+      storeInvalidateInventory()
+      closeTransfer()
+      fetchInventory(selectedLocationId, true)
+    } catch {
+      setTransferError(t('inventory.transferError'))
+    } finally {
+      setTransferring(false)
+    }
   }
 
   // ── Load location options for filter tabs ─────────────────────────────────
@@ -247,31 +397,41 @@ export default function InventoryList() {
   // caching and deduplication.
   const fetchInventory = useCallback(
     async (locId, isRefresh = false) => {
+      const serial = ++fetchSerialRef.current
+
       if (isRefresh) {
         setRefreshing(true)
-        storeInvalidateInventory() // force a fresh fetch on explicit refresh
+        storeInvalidateInventory()
       } else {
-        // If sessionStorage has data for this location, show it immediately and
-        // fetch fresh data in the background — no full-screen loader needed.
-        const stale = readSessionItems(user.email, locId)
+        // Session first (same-tab, fastest), then localStorage (cross-session).
+        const stale = readSessionItems(user.email, locId) ?? readLocalItems(user.email, locId)
         if (stale) {
           setItems(stale)
           setFetching(false)
-          setRefreshing(true) // spinning refresh icon while background fetch runs
+          setRefreshing(true)
         } else {
-          setFetching(true)   // no stale data — show full-screen loader
+          setFetching(true)
         }
       }
       setFetchError(null)
       try {
         const freshItems = await storeFetchInventory(user.email, user.orgId, locId)
+        if (fetchSerialRef.current !== serial) return  // location switched mid-flight
+        // If the store returned [] because a concurrent fetch is already in-flight
+        // (e.g. triggered by ScanUpdate's barcode lookup on the same locationId), skip
+        // the update — stale seed stays visible and the sync effect will apply the
+        // real result once the store settles.
+        if (freshItems.length === 0 && useStore.getState().inventoryLoading) return
         setItems(freshItems)
       } catch {
+        if (fetchSerialRef.current !== serial) return
         setFetchError(t('inventory.error_load'))
       } finally {
-        setHasLoadedOnce(true)
-        setFetching(false)
-        setRefreshing(false)
+        if (fetchSerialRef.current === serial) {
+          setHasLoadedOnce(true)
+          setFetching(false)
+          setRefreshing(false)
+        }
       }
     },
     [user.email, user.orgId, t, storeFetchInventory, storeInvalidateInventory],
@@ -295,10 +455,11 @@ export default function InventoryList() {
   }, [selectedLocationId, fetchInventory, isOwner, isMember, locationsLoaded, availableLocations])
 
   // ── Loading screen ────────────────────────────────────────────────────────
-  // Only shown when there is no stale data to display (fetching === true).
-  // Locations loading never blocks this — tabs show a disabled placeholder
-  // while the locations API call is in-flight (see filter render below).
-  if (fetching) {
+  // Shown when: (a) no stale data at all, OR (b) the store is mid-flight for
+  // this location and there is nothing to display yet — covers the case where
+  // an in-flight fetch from another page (e.g. ScanUpdate's barcode lookup) caused
+  // storeFetchInventory to return [] early so we skipped setItems above.
+  if (fetching || (!fetchError && storeInventoryLoading && items.length === 0)) {
     return <LoadingScreen message={t('inventory.loading')} />
   }
 
@@ -320,7 +481,7 @@ export default function InventoryList() {
 
   const itemLocationFallback =
     selectedLocationId !== 'all'
-      ? items.find((item) => item.location_id === selectedLocationId)?.location_name
+      ? items.find((item) => (item.location_id ?? item.locationId) === selectedLocationId)?.location_name
       : null
 
   const singleLocationLabel =
@@ -330,14 +491,16 @@ export default function InventoryList() {
 
   const showSingleLocation = !showLocationFilter && Boolean(singleLocationLabel)
 
+  const normalizedItems = items.map(normalizeItem)
+
   // Client-side search filter applied on top of whatever the server returned
-  const filtered = items.filter((item) => {
+  const filtered = normalizedItems.filter((item) => {
     if (!search) return true
     const q = search.toLowerCase()
     return (
-      (item.itemName ?? '').toLowerCase().includes(q) ||
-      (item.barcode ?? '').toLowerCase().includes(q) ||
-      (item.category ?? '').toLowerCase().includes(q)
+      item.itemName.toLowerCase().includes(q) ||
+      item.barcode.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q)
     )
   })
 
@@ -462,7 +625,9 @@ export default function InventoryList() {
       )}
 
       {/* ── List or empty state ───────────────────────────────────────── */}
-      <div className={styles.list}>
+      <div className={`${styles.list} ${refreshing ? styles.listRefreshing : ''}`}>
+
+        {refreshing && <div className={styles.loadingBar}><div className={styles.loadingBarFill} /></div>}
 
         {/* No items in this location at all — suppressed while a refresh is in-flight
             so stale-empty session data never flashes empty state before real data arrives */}
@@ -471,7 +636,7 @@ export default function InventoryList() {
             <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
             <p className={styles.emptyText}>{t('inventory.empty_location')}</p>
             <p className={styles.emptyHint}>{t('inventory.empty_location_hint')}</p>
-            <Link to="/add" className={styles.emptyBtn}>
+            <Link to="/scan-update" className={styles.emptyBtn}>
               {t('inventory.add_first_item')}
             </Link>
           </div>
@@ -497,7 +662,8 @@ export default function InventoryList() {
         {/* Item list */}
         {filtered.map((item) => {
           const qty = Number(item.quantity ?? 0)
-          const isLow = qty === 0 || qty <= threshold
+          const itemThreshold = item.lowStockThreshold || threshold
+          const isLow = qty === 0 || qty <= itemThreshold
           const tone = getCategoryTone(item.category)
           const categoryToneClass = {
             chemicals: styles.categoryChemicals,
@@ -522,12 +688,12 @@ export default function InventoryList() {
               <div className={styles.itemMain}>
                 <div className={styles.itemNameRow}>
                   <span className={styles.itemName}>{item.itemName}</span>
-                  <LowStockBadge quantity={qty} threshold={threshold} />
+                  <LowStockBadge quantity={qty} threshold={itemThreshold} />
                 </div>
 
                 <div className={styles.itemDetailsRow}>
-                  {item.location_id && locationName(item.location_id, item.location_name) && (
-                    <span className={styles.locationText}>{locationName(item.location_id, item.location_name)}</span>
+                  {item.location_id && getLocationName(item.location_id, item.location_name) && (
+                    <span className={styles.locationText}>{getLocationName(item.location_id, item.location_name)}</span>
                   )}
                   {item.barcode && (
                     <span className={styles.barcodeText}>{item.barcode}</span>
@@ -559,12 +725,41 @@ export default function InventoryList() {
                   <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
                   <span className={styles.editLinkText}>{t('edit_item')}</span>
                 </Link>
+                {availableLocations.length > 1 && (
+                  <button
+                    type="button"
+                    className={styles.transferBtn}
+                    onClick={() => openTransfer(item)}
+                    aria-label={`${t('inventory.transfer')}: ${item.itemName}`}
+                    title={t('inventory.transfer')}
+                  >
+                    <FontAwesomeIcon icon={faRightLeft} aria-hidden="true" />
+                    <span className={styles.transferBtnText}>{t('inventory.transfer')}</span>
+                  </button>
+                )}
               </div>
             </div>
           )
         })}
 
       </div>
+
+      {transferTarget && (
+        <TransferSheet
+          item={transferTarget}
+          destinations={availableLocations.filter((l) => l.location_id !== transferTarget.location_id)}
+          dest={transferDest}
+          qty={transferQty}
+          maxQty={Number(transferTarget.quantity ?? 0)}
+          transferring={transferring}
+          error={transferError}
+          onDestChange={setTransferDest}
+          onQtyChange={(v) => setTransferQty(Number(v))}
+          onClose={closeTransfer}
+          onConfirm={handleTransfer}
+          t={t}
+        />
+      )}
     </div>
   )
 }

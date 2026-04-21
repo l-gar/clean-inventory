@@ -51,7 +51,7 @@ export default function Locations() {
 
   // ── Data loading ─────────────────────────────────────────────────────────
   // Uses the store so the result is cached and shared with other views
-  // (e.g. AddItem / LocationSelect). After any mutation invalidateLocations()
+  // (e.g. ScanUpdate / LocationSelect). After any mutation invalidateLocations()
   // is called first so the cache is busted before re-fetching.
   const loadLocations = useCallback(async () => {
     setFetching(true)
@@ -138,7 +138,7 @@ export default function Locations() {
       if (wasEmpty) {
         // First location ever — lift the gate and drop into the main app
         setHasLocations(true)
-        navigate('/add', { replace: true })
+        navigate('/scan-update', { replace: true })
       }
     } catch {
       setSaveError(t('locations.error_save'))

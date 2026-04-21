@@ -1,8 +1,11 @@
 /**
- * callAppsScript — single entry point for all Apps Script GET requests.
+ * callAppsScript — transport layer for all Apps Script GET requests.
  *
  * Apps Script is called via GET with URL parameters to avoid CORS preflight
  * issues. Every parameter value is encoded with encodeURIComponent.
+ *
+ * This file is the HTTP transport only. Named domain functions live in
+ * src/store/api.js — import from there, not here, for all inventory operations.
  *
  * Usage:
  *   import { callAppsScript } from '../utils/appsScript'
@@ -36,11 +39,26 @@
  *   updateAlertSetting    { email, orgId, enabled }
  *   updateThreshold       { email, orgId, threshold }
  *
- * Inventory
- *   getInventory          { email, orgId, locationId }  locationId can be 'all'
- *   addItem               { email, orgId, itemName, brand, barcode, quantity, unit, category, locationId, costPerUnit, expectedJobs, trackStock }
- *   updateItem            { email, orgId, itemId, ...updates (only defined keys) }
- *   removeItem            { email, orgId, itemId }
+ * Catalog (item definitions)
+ *   getCatalogItems       { email, orgId }
+ *   addCatalogItem        { email, orgId, itemName, brand, barcode, sku, unit, category, supplier, costPerUnit, reorderPoint, reorderQuantity, trackStock }
+ *   updateCatalogItem     { email, orgId, catalogId, ...updatedFields }
+ *   removeCatalogItem     { email, orgId, catalogId }  — blocked if stock records exist
+ *
+ * Inventory (stock records)
+ *   getStockByLocation    { email, orgId, locationId }  locationId can be 'all'
+ *   addStock              { email, orgId, catalogId, locationId, quantity, costPerUnitOverride, itemLowStockThreshold, expectedJobs }
+ *   updateStock           { email, orgId, stockId, ...updatedFields }  — never touches quantity
+ *   removeStock           { email, orgId, stockId }
+ *
+ * Stock operations (all log to stock_transactions + activity_log)
+ *   deductItem            { email, orgId, stockId, quantity, notes, referenceId, referenceType }
+ *   restockItem           { email, orgId, stockId, quantity, notes }
+ *   adjustItem            { email, orgId, stockId, quantity, notes }  — notes required; quantity is absolute
+ *   transferItem          { email, orgId, fromStockId, toStockId, quantity }
+ *
+ * Stock transactions
+ *   getStockTransactions  { email, orgId, locationId }  locationId optional
  *
  * Activity log
  *   getActivityLog        { email, orgId, locationId }  locationId can be 'all'
@@ -82,46 +100,4 @@ export async function callAppsScript(action, params = {}) {
       `Apps Script action "${action}" returned non-JSON (HTTP ${res.status}): ${text}`
     )
   }
-}
-
-// ─── Inventory helpers ────────────────────────────────────────────────────────
-
-export function getInventory(email, orgId, locationId) {
-  return callAppsScript('getInventory', { email, orgId, locationId })
-}
-
-export function addItem(email, orgId, itemData) {
-  const { itemName, brand, barcode, quantity, unit, category, locationId, costPerUnit, expectedJobs, trackStock } = itemData
-  return callAppsScript('addItem', {
-    email,
-    orgId,
-    itemName,
-    brand,
-    barcode,
-    quantity,
-    unit,
-    category,
-    locationId,
-    costPerUnit,
-    expectedJobs,
-    trackStock,
-  })
-}
-
-export function updateItem(email, orgId, itemId, updates) {
-  const defined = {}
-  for (const [key, value] of Object.entries(updates)) {
-    if (value !== undefined) defined[key] = value
-  }
-  return callAppsScript('updateItem', { email, orgId, itemId, ...defined })
-}
-
-export function removeItem(email, orgId, itemId) {
-  return callAppsScript('removeItem', { email, orgId, itemId })
-}
-
-// ─── Activity log helpers ─────────────────────────────────────────────────────
-
-export function getActivityLog(email, orgId, locationId) {
-  return callAppsScript('getActivityLog', { email, orgId, locationId })
 }

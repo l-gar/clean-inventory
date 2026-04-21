@@ -26,6 +26,21 @@
   padding: 16px;
 }
 
+.lookupLocationRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.lookupLocationLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .scanCard {
   background: var(--color-surface);
   border-radius: 12px;
@@ -473,6 +488,43 @@
   color: #92400e;
 }
 
+/* Known item info card (shown instead of full detail form when item exists elsewhere) */
+.knownItemCard {
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.knownItemName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--green-800);
+}
+
+.knownItemMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.knownItemMeta span {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+}
+
+.knownItemMeta span + span::before {
+  content: '·';
+  margin-right: 8px;
+}
+
+.knownItemSku {
+  font-family: ui-monospace, monospace;
+}
+
 /* Form */
 .form {
   padding: 0 16px;
@@ -554,6 +606,17 @@
 .textarea {
   resize: vertical;
   min-height: 72px;
+}
+
+/* Read-only value display for known-item stock settings */
+.readonlyValue {
+  display: block;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+  background: var(--gray-50);
 }
 
 /* Actions */
