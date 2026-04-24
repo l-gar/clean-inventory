@@ -41,11 +41,20 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 ## Icons
 - Font Awesome only — no other icon libraries, no emoji as icons
 
+## Data normalization
+- All field-name coercion (camelCase ↔ snake_case, alias resolution) lives in `src/domain/normalize.js` — never inline it in a page or hook
+- Use `normalizeLocation` for any location object that may arrive as a string or with mixed field names
+- Use `normalizeItem` for any raw stock/inventory record before it is rendered or classified
+- Use `parseTrackStock` wherever a `track_stock` / `trackStock` value must become a boolean
+- Adding a new normalization need? Add it to `src/domain/normalize.js`, not at the call site
+
 ## State + caching
 - Components never call callAppsScript directly for data fetching — use Zustand store
 - Write ops (add/edit/remove) may call directly but must invalidate store after
-- Cache TTLs: locations 5m · inventory 2m · members 5m · auth 10m · activity_log 1m
-- Store clears on logout and page refresh
+- Every remote data resource must have a store slice: state + fetched timestamp + loading + error + fetch action + invalidate action
+- Cache TTLs: locations 5m · inventory 2m · members 5m · invites 5m · auth 10m · activity_log 1m
+- After a mutation, always invalidate the affected slice then call the fetch action to get fresh data — do not patch local state manually
+- Store clears on logout and page refresh — add new slices to `clearStore`
 
 ## Routing + deploy
 - HashRouter links always — never BrowserRouter

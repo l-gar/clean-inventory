@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -13,8 +13,6 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import {
-  apiGetOrgMembers,
-  apiGetActiveInvites,
   apiGenerateInvite,
   apiRevokeInvite,
   apiRemoveMember,
@@ -34,19 +32,22 @@ export default function MembersPage() {
   const { user } = useAuth()
   const isOwner = user?.role === 'org_owner'
 
-  const fetchLocations = useStore(s => s.fetchLocations)
+  const fetchLocations   = useStore(s => s.fetchLocations)
+  const locations        = useStore(s => s.locations)
+
+  const members          = useStore(s => s.members)
+  const membersLoading   = useStore(s => s.membersLoading)
+  const membersError     = useStore(s => s.membersError)
+  const fetchMembers     = useStore(s => s.fetchMembers)
+  const invalidateMembers = useStore(s => s.invalidateMembers)
+
+  const invites          = useStore(s => s.invites)
+  const invitesLoading   = useStore(s => s.invitesLoading)
+  const invitesError     = useStore(s => s.invitesError)
+  const fetchInvites     = useStore(s => s.fetchInvites)
+  const invalidateInvites = useStore(s => s.invalidateInvites)
 
   const [tab, setTab] = useState('team')
-
-  const [members, setMembers]             = useState([])
-  const [membersLoading, setMembersLoading] = useState(true)
-  const [membersError, setMembersError]   = useState(null)
-
-  const [invites, setInvites]             = useState([])
-  const [invitesLoading, setInvitesLoading] = useState(true)
-  const [invitesError, setInvitesError]   = useState(null)
-
-  const [locations, setLocations] = useState([])
 
   // Location sheet
   const [locationTarget, setLocationTarget] = useState(null)
@@ -71,41 +72,16 @@ export default function MembersPage() {
 
   const [copiedToken, setCopiedToken] = useState(null)
 
-  const loadMembers = useCallback(async () => {
-    setMembersLoading(true)
-    setMembersError(null)
-    try {
-      setMembers(await apiGetOrgMembers({ email: user.email, orgId: user.orgId }))
-    } catch {
-      setMembersError(t('members.error_load'))
-    } finally {
-      setMembersLoading(false)
-    }
-  }, [user.email, user.orgId, t])
-
-  const loadInvites = useCallback(async () => {
-    setInvitesLoading(true)
-    setInvitesError(null)
-    try {
-      setInvites(await apiGetActiveInvites({ email: user.email, orgId: user.orgId }))
-    } catch {
-      setInvitesError(t('members.error_load_invites'))
-    } finally {
-      setInvitesLoading(false)
-    }
-  }, [user.email, user.orgId, t])
-
   useEffect(() => {
-    loadMembers()
-    loadInvites()
+    fetchMembers(user.email, user.orgId).catch(() => {})
+    fetchInvites(user.email, user.orgId).catch(() => {})
     fetchLocations(user.email, user.orgId)
       .then(locs => {
-        setLocations(locs)
         const firstId = locs[0]?.location_id ?? locs[0]?.locationId ?? ''
         if (firstId) setSelectedLocId(firstId)
       })
       .catch(() => {})
-  }, [loadMembers, loadInvites, fetchLocations, user.email, user.orgId])
+  }, [fetchMembers, fetchInvites, fetchLocations, user.email, user.orgId])
 
   // ── Location sheet ──────────────────────────────────────────────────────────
 
@@ -158,7 +134,8 @@ export default function MembersPage() {
     try {
       await apiRemoveMember({ email: user.email, targetEmail, orgId: user.orgId })
       setConfirmRemove(null)
-      setMembers(prev => prev.filter(m => m.email !== targetEmail))
+      invalidateMembers()
+      await fetchMembers(user.email, user.orgId)
     } catch {
       setRemoveError(t('members.remove_error'))
     } finally {
@@ -174,7 +151,8 @@ export default function MembersPage() {
     try {
       await apiRevokeInvite({ email: user.email, token })
       setConfirmRevoke(null)
-      setInvites(prev => prev.filter(i => i.token !== token))
+      invalidateInvites()
+      await fetchInvites(user.email, user.orgId)
     } catch {
       setRevokeError(t('members.revoke_error'))
     } finally {
@@ -188,15 +166,13 @@ export default function MembersPage() {
     setGenerating(true)
     setGenerateError(null)
     try {
-      const data = await apiGenerateInvite({
+      await apiGenerateInvite({
         email: user.email,
         orgId: user.orgId,
         role: isOwner ? inviteRole : 'org_member',
       })
-      setInvites(prev => [
-        { token: data.token, expiresDate: data.expiresDate, role: data.role, createdBy: user.email },
-        ...prev,
-      ])
+      invalidateInvites()
+      await fetchInvites(user.email, user.orgId)
     } catch {
       setGenerateError(t('members.generate_error'))
     } finally {
@@ -261,7 +237,7 @@ export default function MembersPage() {
           ) : membersError ? (
             <div className={styles.errorState}>
               <p>{membersError}</p>
-              <button type="button" className={styles.retryBtn} onClick={loadMembers}>
+              <button type="button" className={styles.retryBtn} onClick={() => { invalidateMembers(); fetchMembers(user.email, user.orgId) }}>
                 {t('members.retry')}
               </button>
             </div>
@@ -396,7 +372,7 @@ export default function MembersPage() {
           ) : invitesError ? (
             <div className={styles.errorState}>
               <p>{invitesError}</p>
-              <button type="button" className={styles.retryBtn} onClick={loadInvites}>
+              <button type="button" className={styles.retryBtn} onClick={() => { invalidateInvites(); fetchInvites(user.email, user.orgId) }}>
                 {t('members.retry')}
               </button>
             </div>

@@ -32,6 +32,7 @@ import {
   apiGetStockByLocation,
   apiGetStockTransactions,
   apiGetOrgMembers,
+  apiGetActiveInvites,
   apiGetActivityLog,
 } from './api'
 
@@ -41,6 +42,7 @@ const TTL = {
   catalog:           5 * 60 * 1000,
   inventory:         2 * 60 * 1000,
   members:           5 * 60 * 1000,
+  invites:           5 * 60 * 1000,
   stockTransactions: 1 * 60 * 1000,
   activityLog:       1 * 60 * 1000,
 }
@@ -271,6 +273,30 @@ export const useStore = create((set, get) => ({
 
   invalidateMembers: () => set({ membersFetched: null }),
 
+  // ── Invites ──────────────────────────────────────────────────────────────────
+  invites:        [],
+  invitesFetched: null,
+  invitesLoading: false,
+  invitesError:   false,
+
+  fetchInvites: async (email, orgId) => {
+    const { invitesFetched, invitesLoading, invites } = get()
+    if (!isExpired(invitesFetched, TTL.invites)) return invites
+    if (invitesLoading) return invites
+
+    set({ invitesLoading: true, invitesError: false })
+    try {
+      const list = await apiGetActiveInvites({ email, orgId })
+      set({ invites: list, invitesFetched: Date.now(), invitesLoading: false })
+      return list
+    } catch (err) {
+      set({ invitesError: true, invitesLoading: false })
+      throw err
+    }
+  },
+
+  invalidateInvites: () => set({ invitesFetched: null }),
+
   // ── Activity log ────────────────────────────────────────────────────────────
   activityLog:           [],
   activityLogFetched:    null,
@@ -323,6 +349,7 @@ export const useStore = create((set, get) => ({
       catalog:          [], catalogFetched: null,              catalogLoading: false,            catalogError: false,
       inventory:        [], inventoryFetched: null,            inventoryLoading: false,          inventoryError: false,          inventoryLocationId: null,
       members:          [], membersFetched: null,              membersLoading: false,            membersError: false,
+      invites:          [], invitesFetched: null,              invitesLoading: false,            invitesError: false,
       stockTransactions:[], stockTransactionsFetched: null,    stockTransactionsLoading: false,  stockTransactionsError: false,   stockTransactionsLocationId: null,
       activityLog:      [], activityLogFetched: null,          activityLogLoading: false,        activityLogError: false,         activityLogLocationId: null,
     })

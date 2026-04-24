@@ -31,11 +31,11 @@ Acceptance criteria:
 
 Issue title suggestion: `perf: move members and invites reads into zustand store with ttl`
 
-- [ ] Add `invites` store slice (`invites`, `invitesFetched`, `invitesLoading`, `invitesError`).
-- [ ] Add `fetchInvites` + `invalidateInvites` actions with TTL behavior.
-- [ ] Ensure members slice has consistent TTL/invalidation use from page.
-- [ ] Update `src/pages/MembersPage.jsx` to use store selectors/actions instead of direct read fetches.
-- [ ] Keep mutation flows (generate/revoke/remove) followed by targeted invalidation or local optimistic updates.
+- [x] Add `invites` store slice (`invites`, `invitesFetched`, `invitesLoading`, `invitesError`).
+- [x] Add `fetchInvites` + `invalidateInvites` actions with TTL behavior.
+- [x] Ensure members slice has consistent TTL/invalidation use from page.
+- [x] Update `src/pages/MembersPage.jsx` to use store selectors/actions instead of direct read fetches.
+- [x] Keep mutation flows (generate/revoke/remove) followed by targeted invalidation or local optimistic updates.
 
 Acceptance criteria:
 - [ ] Opening Members page does not refetch members/invites within TTL.
