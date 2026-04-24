@@ -46,12 +46,12 @@ Acceptance criteria:
 
 Issue title suggestion: `refactor: replace page-level callAppsScript writes with api wrappers`
 
-- [ ] Add missing write wrappers in `src/store/api.js` for page-level direct write calls.
-- [ ] Replace direct `callAppsScript` write usage in:
+- [x] Add missing write wrappers in `src/store/api.js` for page-level direct write calls.
+- [x] Replace direct `callAppsScript` write usage in:
   - `src/pages/InventoryList.jsx` (transfer)
   - `src/pages/Locations.jsx` (add/update/remove location)
   - `src/pages/Settings.jsx` (org name/threshold updates)
-- [ ] Preserve existing invalidate behavior and user-facing error messages.
+- [x] Preserve existing invalidate behavior and user-facing error messages.
 
 Acceptance criteria:
 - [ ] All page write operations use API-layer wrappers.

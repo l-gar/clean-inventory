@@ -14,7 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
-import { callAppsScript } from '../utils/appsScript'
+import { apiTransferItem } from '../store/api'
 import { normalizeLocation, normalizeItem } from '../domain/normalize'
 import LoadingScreen from '../components/LoadingScreen'
 import styles from './InventoryList.module.css'
@@ -285,7 +285,7 @@ export default function InventoryList() {
     setTransferring(true)
     setTransferError('')
     try {
-      await callAppsScript('transferItem', {
+      await apiTransferItem({
         email: user.email,
         orgId: user.orgId,
         fromStockId: transferTarget.itemId,

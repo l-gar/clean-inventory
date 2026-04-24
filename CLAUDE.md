@@ -49,8 +49,9 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - Adding a new normalization need? Add it to `src/domain/normalize.js`, not at the call site
 
 ## State + caching
-- Components never call callAppsScript directly for data fetching — use Zustand store
-- Write ops (add/edit/remove) may call directly but must invalidate store after
+- Components never call callAppsScript directly — use Zustand store for reads, `src/store/api.js` wrappers for writes
+- Adding a new write operation? Add an `api*` wrapper in `src/store/api.js` first, then import it in the page — never call callAppsScript inline
+- Write ops must invalidate the affected store slice after every successful mutation
 - Every remote data resource must have a store slice: state + fetched timestamp + loading + error + fetch action + invalidate action
 - Cache TTLs: locations 5m · inventory 2m · members 5m · invites 5m · auth 10m · activity_log 1m
 - After a mutation, always invalidate the affected slice then call the fetch action to get fresh data — do not patch local state manually

@@ -8,7 +8,7 @@ import {
   faPenToSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
-import { callAppsScript } from '../utils/appsScript'
+import { apiUpdateOrgName, apiUpdateThreshold } from '../store/api'
 import LocationSelect from '../components/LocationSelect'
 import styles from './Settings.module.css'
 
@@ -64,7 +64,7 @@ export default function Settings() {
     setOrgNameSaving(true)
     setOrgNameError('')
     try {
-      await callAppsScript('updateOrgName', {
+      await apiUpdateOrgName({
         email: user.email,
         orgId: user.orgId,
         orgName: trimmed,
@@ -146,7 +146,7 @@ export default function Settings() {
     setThresholdSaving(true)
     setThresholdError('')
     try {
-      await callAppsScript('updateThreshold', {
+      await apiUpdateThreshold({
         email: user.email,
         orgId: user.orgId,
         threshold: prefs.lowStockThreshold,

@@ -10,7 +10,7 @@ import {
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
-import { callAppsScript } from '../utils/appsScript'
+import { apiAddLocation, apiUpdateLocation, apiRemoveLocation } from '../store/api'
 import { useStore } from '../store'
 import LoadingScreen from '../components/LoadingScreen'
 import styles from './Locations.module.css'
@@ -115,20 +115,18 @@ export default function Locations() {
     setSaveError(null)
     try {
       if (editTarget) {
-        const data = await callAppsScript('updateLocation', {
+        await apiUpdateLocation({
           email: user.email,
           orgId: user.orgId,
           locationId: editTarget.location_id,
           locationName: trimmed,
         })
-        if (data.success === false) throw new Error()
       } else {
-        const data = await callAppsScript('addLocation', {
+        await apiAddLocation({
           email: user.email,
           orgId: user.orgId,
           locationName: trimmed,
         })
-        if (data.success === false) throw new Error()
       }
 
       closeSheet()
@@ -152,12 +150,11 @@ export default function Locations() {
     setDeleting(true)
     setDeleteError(null)
     try {
-      const data = await callAppsScript('removeLocation', {
+      await apiRemoveLocation({
         email: user.email,
         orgId: user.orgId,
         locationId,
       })
-      if (data.success === false) throw new Error()
       setConfirmDeleteId(null)
       invalidateLocations()
       await loadLocations()

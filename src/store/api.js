@@ -18,8 +18,9 @@
  *   apiDeductItem, apiRestockItem, apiAdjustItem, apiTransferItem
  *   apiRemoveCatalogItem, apiRemoveStock
  *   apiCheckLowStockAllOrgs, apiClearStockAlert
- *   apiUpdateAlertSetting, apiUpdateThreshold
+ *   apiUpdateAlertSetting, apiUpdateThreshold, apiUpdateOrgName
  *   apiGenerateInvite, apiRevokeInvite, apiRemoveMember
+ *   apiAddLocation, apiUpdateLocation, apiRemoveLocation
  *   apiAssignLocation, apiRemoveLocationAssignment, apiJoinOrg
  */
 
@@ -170,6 +171,12 @@ export async function apiUpdateThreshold({ email, orgId, threshold }) {
   return data
 }
 
+export async function apiUpdateOrgName({ email, orgId, orgName }) {
+  const data = await callAppsScript('updateOrgName', { email, orgId, orgName })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
 export async function apiGenerateInvite({ email, orgId, role }) {
   const data = await callAppsScript('generateInvite', { email, orgId, role })
   if (data.success === false) throw new Error(data.error ?? 'failed')
@@ -184,6 +191,24 @@ export async function apiRevokeInvite({ email, token }) {
 
 export async function apiRemoveMember({ email, targetEmail, orgId }) {
   const data = await callAppsScript('removeMember', { email, targetEmail, orgId })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
+export async function apiAddLocation({ email, orgId, locationName }) {
+  const data = await callAppsScript('addLocation', { email, orgId, locationName })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
+export async function apiUpdateLocation({ email, orgId, locationId, locationName }) {
+  const data = await callAppsScript('updateLocation', { email, orgId, locationId, locationName })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
+export async function apiRemoveLocation({ email, orgId, locationId }) {
+  const data = await callAppsScript('removeLocation', { email, orgId, locationId })
   if (data.success === false) throw new Error(data.error ?? 'failed')
   return data
 }
