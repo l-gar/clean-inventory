@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { callAppsScript } from '../utils/appsScript'
+import { normalizeLocation, normalizeItem } from '../domain/normalize'
 import LoadingScreen from '../components/LoadingScreen'
 import styles from './InventoryList.module.css'
 
@@ -51,44 +52,6 @@ function readLocalItems(email, locationId) {
     return Date.now() - ts <= 10 * 60 * 1000 ? items : null
   } catch {
     return null
-  }
-}
-
-function normalizeLocation(location) {
-  if (typeof location === 'string') {
-    return { location_id: location, location_name: location }
-  }
-
-  const id = location?.location_id ?? location?.locationId ?? location?.id ?? ''
-  const name = location?.location_name ?? location?.locationName ?? location?.name ?? id
-
-  return {
-    ...location,
-    location_id: id,
-    location_name: name,
-  }
-}
-
-function normalizeItem(item) {
-  return {
-    ...item,
-    itemId:    item.stock_id    ?? item.stockId    ?? item.itemId    ?? '',
-    itemName:  item.item_name   ?? item.itemName   ?? '',
-    barcode:   item.barcode     ?? item.sku        ?? '',
-    category:  item.category    ?? '',
-    quantity:  item.quantity    ?? 0,
-    unit:      item.unit        ?? '',
-    location_id:   item.location_id   ?? item.locationId   ?? '',
-    location_name: item.location_name ?? item.locationName ?? '',
-    lowStockThreshold: Number(
-      item.item_low_stock_threshold ?? item.itemLowStockThreshold ??
-      item.minQuantity              ?? item.min_quantity           ?? 0
-    ),
-    track_stock:   (item.track_stock == null && item.trackStock == null)
-      ? true
-      : item.track_stock === true || item.trackStock === true ||
-        String(item.track_stock ?? item.trackStock ?? '').toUpperCase() === 'TRUE',
-    reorder_point: Number(item.reorder_point ?? item.reorderPoint ?? 0),
   }
 }
 

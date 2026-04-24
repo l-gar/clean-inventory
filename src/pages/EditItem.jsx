@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { apiUpdateCatalogItem, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem } from '../store/api'
+import { parseTrackStock } from '../domain/normalize'
 import { useStore } from '../store'
 import LocationSelect from '../components/LocationSelect'
 import CategoryInput from '../components/CategoryInput'
@@ -29,10 +30,7 @@ function itemToForm(item) {
     costPerUnit:          String(item.cost_per_unit ?? item.costPerUnit    ?? ''),
     costPerUnitOverride:  String(item.cost_per_unit_override ?? item.costPerUnitOverride ?? ''),
     expectedJobs:         String(item.expected_jobs ?? item.expectedJobs   ?? ''),
-    trackStock: (item.track_stock == null && item.trackStock == null)
-      ? true
-      : item.track_stock === true || item.trackStock === true ||
-        String(item.track_stock ?? item.trackStock ?? '').toUpperCase() === 'TRUE',
+    trackStock: parseTrackStock(item.track_stock ?? item.trackStock),
     description:          item.description         ?? '',
   }
 }

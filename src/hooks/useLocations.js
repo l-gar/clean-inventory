@@ -19,16 +19,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
-
-// Normalize an entry from assignedLocations which may arrive as a plain
-// string ID or as an object.  Handles both camelCase and snake_case field
-// names so callers always get location_id / location_name.
-function normalizeLocation(l) {
-  if (typeof l === 'string') return { location_id: l, location_name: l }
-  const id   = l.location_id   ?? l.locationId   ?? l.id
-  const name = l.location_name ?? l.locationName ?? l.name ?? id ?? String(l)
-  return { location_id: String(id ?? l), location_name: String(name) }
-}
+import { normalizeLocation } from '../domain/normalize'
 
 export function useLocations() {
   const { user } = useAuth()

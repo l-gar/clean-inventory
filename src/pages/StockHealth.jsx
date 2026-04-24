@@ -9,6 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
+import { normalizeItem } from '../domain/normalize'
 import LoadingScreen from '../components/LoadingScreen'
 import styles from './StockHealth.module.css'
 
@@ -110,31 +111,10 @@ export default function StockHealth() {
   const flagged = useMemo(() => {
     const out = [], low = [], reorder = []
     for (const raw of inventory) {
-      // track_stock arrives as boolean or Sheets string — absent field defaults to tracked
-      const rawTrack = raw.track_stock ?? raw.trackStock
-      const isTracked = rawTrack == null
-        ? true
-        : rawTrack === true || String(rawTrack).toUpperCase() === 'TRUE'
-      if (!isTracked) continue
-
-      const locId = raw.location_id ?? raw.locationId ?? ''
+      const item = normalizeItem(raw)
+      if (!item.track_stock) continue
       // Only filter by location once locations have loaded; empty set means still loading
-      if (accessibleIds.size > 0 && !accessibleIds.has(locId)) continue
-
-      // Normalize raw API field names so helper functions get consistent keys
-      const item = {
-        ...raw,
-        itemId:        raw.stock_id      ?? raw.stockId      ?? raw.itemId      ?? '',
-        itemName:      raw.item_name     ?? raw.itemName     ?? '',
-        location_id:   locId,
-        location_name: raw.location_name ?? raw.locationName ?? '',
-        quantity:      raw.quantity      ?? 0,
-        unit:          raw.unit          ?? '',
-        lowStockThreshold: Number(
-          raw.item_low_stock_threshold ?? raw.itemLowStockThreshold ?? raw.lowStockThreshold ?? 0
-        ),
-        reorder_point: Number(raw.reorder_point ?? raw.reorderPoint ?? 0),
-      }
+      if (accessibleIds.size > 0 && !accessibleIds.has(item.location_id)) continue
 
       const tier = classifyItem(item, orgThreshold)
       if (tier === 'out') out.push(item)

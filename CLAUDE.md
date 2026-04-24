@@ -14,6 +14,19 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - No "what" comments (// increment i) — only "why" comments
 - Top-level function docstrings only
 - Strip all unnecessary whitespace/boilerplate
+- Prefer `clamp()` / `min()` / `max()` over media queries for fluid sizing
+- One declaration per CSS rule — no shorthand that obscures intent (exception: `flex`, `padding`, `margin`)
+
+## Responsive / mobile-first
+- Design for 375px (iPhone SE) as the baseline; scale up, never down
+- All layouts must be tested at 320px, 375px, 390px (iPhone 14), and 768px
+- Use `min-width: 0` on flex/grid children to prevent overflow blowout
+- `white-space: nowrap` + `text-overflow: ellipsis` + `overflow: hidden` on any text that sits inside a fixed-width flex item
+- Never use fixed pixel heights on containers that hold dynamic text
+- Always apply `env(safe-area-inset-*)` padding for iPhone notch / home bar
+- Touch targets: minimum 44×44px (Apple HIG) — use padding, not width/height alone
+- Avoid `hover`-only interactions — pair every hover state with a matching `active` state
+- `webkit-tap-highlight-color: transparent` on interactive elements to suppress the grey flash on iOS Safari
 
 ## i18n
 - All user-facing text via t() hook — no hardcoded English strings
