@@ -25,7 +25,7 @@ const GOOGLE_SCOPES = [
 
 const CATALOG_HEADER_ROW = [
   'catalog_id', 'org_id', 'item_name', 'brand', 'barcode', 'sku', 'description',
-  'image_url', 'unit', 'category', 'supplier', 'cost_per_unit', 'reorder_point',
+  'unit', 'category', 'supplier', 'cost_per_unit', 'reorder_point',
   'reorder_quantity', 'track_stock', 'added_by', 'added_date',
   'last_updated_by', 'last_updated_date',
 ]
