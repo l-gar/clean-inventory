@@ -32,7 +32,7 @@ const ROLE_KEYS = {
 }
 
 export default function MembersPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const isOwner = user?.role === 'org_owner'
 
@@ -272,7 +272,7 @@ export default function MembersPage() {
                             </span>
                             {member.joinedDate && (
                               <span className={styles.joinedDate}>
-                                {t('members.joined', { date: member.joinedDate })}
+                                {t('members.joined', { date: new Date(member.joinedDate).toLocaleDateString(i18n.language, { year: 'numeric', month: 'short', day: 'numeric' }) })}
                               </span>
                             )}
                           </div>

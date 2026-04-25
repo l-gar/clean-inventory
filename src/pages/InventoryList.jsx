@@ -505,7 +505,7 @@ export default function InventoryList() {
             aria-hidden="true"
           />
           <input
-            className={styles.searchInput}
+            className={`${styles.searchInput}${search ? ` ${styles.searchInputActive}` : ''}`}
             type="search"
             placeholder={t('inventory.searchPlaceholder')}
             value={search}

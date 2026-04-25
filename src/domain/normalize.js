@@ -19,7 +19,7 @@ export function normalizeItem(raw) {
     ...raw,
     itemId:            raw.stock_id    ?? raw.stockId    ?? raw.itemId    ?? '',
     itemName:          raw.item_name   ?? raw.itemName   ?? '',
-    barcode:           raw.barcode     ?? raw.sku        ?? '',
+    barcode:           String(raw.barcode ?? raw.sku ?? ''),
     category:          raw.category    ?? '',
     quantity:          raw.quantity    ?? 0,
     unit:              raw.unit        ?? '',
