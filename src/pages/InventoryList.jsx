@@ -17,6 +17,9 @@ import { useStore } from '../store'
 import { apiTransferItem } from '../store/api'
 import { normalizeLocation, normalizeItem } from '../domain/normalize'
 import LoadingScreen from '../components/LoadingScreen'
+import InlineLoader from '../components/InlineLoader'
+import ErrorState from '../components/ErrorState'
+import EmptyState from '../components/EmptyState'
 import styles from './InventoryList.module.css'
 
 // ── sessionStorage seeds ──────────────────────────────────────────────────────
@@ -575,42 +578,36 @@ export default function InventoryList() {
 
       {/* ── Error state ──────────────────────────────────────────────── */}
       {fetchError && (
-        <div className={styles.errorBanner}>
-          <span>{fetchError}</span>
-          <button
-            type="button"
-            className={styles.retryBtn}
-            onClick={() => fetchInventory(selectedLocationId)}
-          >
-            {t('inventory.retry')}
-          </button>
-        </div>
+        <ErrorState
+          variant="banner"
+          message={fetchError}
+          onRetry={() => fetchInventory(selectedLocationId)}
+          retryLabel={t('inventory.retry')}
+        />
       )}
 
       {/* ── List or empty state ───────────────────────────────────────── */}
       <div className={`${styles.list} ${refreshing ? styles.listRefreshing : ''}`}>
 
-        {refreshing && <div className={styles.loadingBar}><div className={styles.loadingBarFill} /></div>}
+        {refreshing && <InlineLoader />}
 
         {/* No items in this location at all — suppressed while a refresh is in-flight
             so stale-empty session data never flashes empty state before real data arrives */}
         {!fetchError && hasLoadedOnce && !refreshing && !storeInventoryLoading && items.length === 0 && (
-          <div className={styles.empty}>
-            <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
-            <p className={styles.emptyText}>{t('inventory.empty_location')}</p>
-            <p className={styles.emptyHint}>{t('inventory.empty_location_hint')}</p>
-            <Link to="/scan-update" className={styles.emptyBtn}>
-              {t('inventory.add_first_item')}
-            </Link>
-          </div>
+          <EmptyState
+            icon={faBoxOpen}
+            title={t('inventory.empty_location')}
+            hint={t('inventory.empty_location_hint')}
+            action={{ label: t('inventory.add_first_item'), to: '/scan-update' }}
+          />
         )}
 
         {/* Search returned no results, but there are items in this location */}
         {!fetchError && items.length > 0 && filtered.length === 0 && (
-          <div className={styles.empty}>
-            <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
-            <p className={styles.emptyText}>{t('inventory.empty')}</p>
-          </div>
+          <EmptyState
+            icon={faMagnifyingGlass}
+            title={t('inventory.empty')}
+          />
         )}
 
         {!fetchError && filtered.length > 0 && (

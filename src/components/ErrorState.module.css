@@ -1,0 +1,66 @@
+/* ── Centered variant — default — used inside tab/page content ─────────── */
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.message {
+  color: var(--gray-600);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.retryCentered {
+  padding: 8px 20px;
+  border: 1.5px solid var(--green-400);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--green-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.retryCentered:hover {
+  background: var(--green-50);
+}
+
+/* ── Banner variant — inline top-of-content — used in InventoryList ─────── */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--red-50, #fff5f5);
+  border-bottom: 1px solid var(--red-200, #fecaca);
+  font-size: 0.875rem;
+  color: var(--red-700, #b91c1c);
+}
+
+.banner .message {
+  color: inherit;
+  font-size: inherit;
+}
+
+.retryBanner {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1.5px solid var(--red-300, #fca5a5);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--red-700, #b91c1c);
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.retryBanner:hover {
+  background: var(--red-100, #fee2e2);
+}

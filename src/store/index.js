@@ -176,6 +176,7 @@ export const useStore = create((set, get) => ({
   inventoryLoading:    false,
   inventoryError:      false,
   inventoryLocationId: null, // tracks which locationId the cache is for
+  barcodeIndex:        null, // Map<barcode, item[]> — built only for locationId='all'
 
   /**
    * Fetch stock records for a specific locationId (or 'all').
@@ -188,7 +189,7 @@ export const useStore = create((set, get) => ({
     if (state.inventoryLocationId !== locationId) {
       // Atomic reset: clear stale data + mark loading so the sync effect in
       // InventoryList won't wipe the component's stale-seed items prematurely.
-      set({ inventoryFetched: null, inventory: [], inventoryLocationId: locationId, inventoryLoading: true, inventoryError: false })
+      set({ inventoryFetched: null, inventory: [], inventoryLocationId: locationId, inventoryLoading: true, inventoryError: false, barcodeIndex: null })
     } else {
       const current = get()
       if (!isExpired(current.inventoryFetched, TTL.inventory)) return current.inventory
@@ -202,7 +203,24 @@ export const useStore = create((set, get) => ({
       saveInventoryToLocal(email, locationId, items)
       // Discard result if the user switched locations while this fetch was in-flight
       if (get().inventoryLocationId !== locationId) return get().inventory
-      set({ inventory: items, inventoryFetched: Date.now(), inventoryLoading: false })
+      const update = { inventory: items, inventoryFetched: Date.now(), inventoryLoading: false }
+      if (locationId === 'all') {
+        const idx = new Map()
+        for (const item of items) {
+          if (!item.barcode) continue
+          const b = String(item.barcode).trim()
+          if (!b) continue
+          const padded = b.padStart(12, '0')
+          if (!idx.has(b)) idx.set(b, [])
+          idx.get(b).push(item)
+          if (padded !== b) {
+            if (!idx.has(padded)) idx.set(padded, [])
+            idx.get(padded).push(item)
+          }
+        }
+        update.barcodeIndex = idx
+      }
+      set(update)
       return items
     } catch (err) {
       if (get().inventoryLocationId === locationId) {
@@ -212,7 +230,24 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  invalidateInventory: () => set({ inventoryFetched: null }),
+  invalidateInventory: () => set({ inventoryFetched: null, barcodeIndex: null }),
+
+  /**
+   * O(1) barcode lookup against the 'all' inventory index.
+   * Falls back to a linear scan if the index hasn't been built yet.
+   */
+  lookupByBarcode: (code) => {
+    const { barcodeIndex, inventory, inventoryLocationId } = get()
+    const padded = String(code).padStart(12, '0')
+    if (barcodeIndex && inventoryLocationId === 'all') {
+      return barcodeIndex.get(code) ?? barcodeIndex.get(padded) ?? []
+    }
+    return inventory.filter((item) => {
+      if (!item.barcode) return false
+      const b = String(item.barcode)
+      return b === code || b === padded
+    })
+  },
 
   // ── Stock transactions ────────────────────────────────────────────────────────
   stockTransactions:           [],
@@ -347,7 +382,7 @@ export const useStore = create((set, get) => ({
     set({
       locations:        [], locationsFetched: null,            locationsLoading: false,         locationsError: false,
       catalog:          [], catalogFetched: null,              catalogLoading: false,            catalogError: false,
-      inventory:        [], inventoryFetched: null,            inventoryLoading: false,          inventoryError: false,          inventoryLocationId: null,
+      inventory:        [], inventoryFetched: null,            inventoryLoading: false,          inventoryError: false,          inventoryLocationId: null,      barcodeIndex: null,
       members:          [], membersFetched: null,              membersLoading: false,            membersError: false,
       invites:          [], invitesFetched: null,              invitesLoading: false,            invitesError: false,
       stockTransactions:[], stockTransactionsFetched: null,    stockTransactionsLoading: false,  stockTransactionsError: false,   stockTransactionsLocationId: null,

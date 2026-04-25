@@ -13,6 +13,9 @@ import { useAuth } from '../context/AuthContext'
 import { apiAddLocation, apiUpdateLocation, apiRemoveLocation } from '../store/api'
 import { useStore } from '../store'
 import LoadingScreen from '../components/LoadingScreen'
+import ErrorState from '../components/ErrorState'
+import EmptyState from '../components/EmptyState'
+import ConfirmBlock from '../components/ConfirmBlock'
 import styles from './Locations.module.css'
 
 export default function Locations() {
@@ -211,8 +214,8 @@ export default function Locations() {
     return (
       <div className={`${styles.page} ${!isGate ? styles.pageApp : ''}`}>
         {isGate && GateHeader}
-        <div className={styles.centered}>
-          {!isGate && (
+        {!isGate && (
+          <div className={styles.backRow}>
             <button
               type="button"
               className={styles.backLinkBtn}
@@ -221,12 +224,13 @@ export default function Locations() {
               <FontAwesomeIcon icon={faChevronLeft} aria-hidden="true" />
               {t('locations.back')}
             </button>
-          )}
-          <p className={styles.loadErrorText}>{loadError}</p>
-          <button className={styles.btnPrimary} type="button" onClick={loadLocations}>
-            {t('locations.retry')}
-          </button>
-        </div>
+          </div>
+        )}
+        <ErrorState
+          message={loadError}
+          onRetry={loadLocations}
+          retryLabel={t('locations.retry')}
+        />
       </div>
     )
   }
@@ -259,18 +263,14 @@ export default function Locations() {
         {isEmpty ? (
 
           /* Empty state */
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon}>
-              <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
-            </div>
-            <h2 className={styles.emptyTitle}>{t('locations.empty_title')}</h2>
-            <p className={styles.emptyBody}>{t('locations.empty_body')}</p>
-            {canEdit && (
-              <button className={styles.btnPrimary} type="button" onClick={openAdd}>
-                {t('locations.empty_cta')}
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={faLocationDot}
+            iconCircle
+            fill
+            title={t('locations.empty_title')}
+            body={t('locations.empty_body')}
+            action={canEdit ? { label: t('locations.empty_cta'), onClick: openAdd } : undefined}
+          />
 
         ) : (
 
@@ -288,33 +288,15 @@ export default function Locations() {
                 <li key={loc.location_id} className={styles.card}>
                   {confirmDeleteId === loc.location_id ? (
 
-                    /* Delete confirmation inline */
-                    <div className={styles.deleteConfirm}>
-                      <p className={styles.deleteMsg}>
-                        {t('locations.delete_confirm')}
-                      </p>
-                      <div className={styles.deleteActions}>
-                        <button
-                          className={styles.btnDanger}
-                          type="button"
-                          onClick={() => handleDelete(loc.location_id)}
-                          disabled={deleting}
-                        >
-                          {t('locations.delete_confirm_yes')}
-                        </button>
-                        <button
-                          className={styles.btnSecondary}
-                          type="button"
-                          onClick={() => { setConfirmDeleteId(null); setDeleteError(null) }}
-                          disabled={deleting}
-                        >
-                          {t('locations.delete_confirm_no')}
-                        </button>
-                      </div>
-                      {deleteError && (
-                        <p className={styles.deleteErrorText}>{deleteError}</p>
-                      )}
-                    </div>
+                    <ConfirmBlock
+                      message={t('locations.delete_confirm')}
+                      confirmLabel={t('locations.delete_confirm_yes')}
+                      cancelLabel={t('locations.delete_confirm_no')}
+                      onConfirm={() => handleDelete(loc.location_id)}
+                      onCancel={() => { setConfirmDeleteId(null); setDeleteError(null) }}
+                      busy={deleting}
+                      error={deleteError}
+                    />
 
                   ) : (
 

@@ -36,8 +36,8 @@ export default function AddItem() {
   const { locations } = useLocations()
   const invalidateInventory = useStore((s) => s.invalidateInventory)
   const invalidateCatalog   = useStore((s) => s.invalidateCatalog)
-  const storeInventory      = useStore((s) => s.inventory)
   const storeFetchInventory = useStore((s) => s.fetchInventory)
+  const lookupByBarcode     = useStore((s) => s.lookupByBarcode)
 
   const isMember    = user?.role === 'org_member'
   const canEditAll  = user?.role === 'org_owner' || user?.role === 'manager'
@@ -131,17 +131,14 @@ export default function AddItem() {
 
     const padded = code.padStart(12, '0')
 
-    // Step 1 — client-side store check (fast path)
-    let inventory = storeInventory
+    // Step 1 — client-side index check (fast path)
+    // fetchInventory is TTL-cached; on cache hit it returns immediately and the
+    // barcodeIndex is already built, so lookupByBarcode below is O(1).
     try {
-      inventory = await storeFetchInventory(user.email, user.orgId, 'all')
-    } catch { /* fall through with cached data */ }
+      await storeFetchInventory(user.email, user.orgId, 'all')
+    } catch { /* fall through — lookupByBarcode will use whatever is cached */ }
 
-    const allBarcodeMatches = inventory.filter((item) => {
-      if (!item.barcode) return false
-      const b = String(item.barcode)
-      return b === code || b === padded
-    })
+    const allBarcodeMatches = lookupByBarcode(code)
 
     const locationMatch = lookupLocation
       ? allBarcodeMatches.find((item) => (item.location_id ?? item.locationId) === lookupLocation)

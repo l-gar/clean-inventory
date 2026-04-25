@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -11,7 +11,26 @@ import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { normalizeItem } from '../domain/normalize'
 import LoadingScreen from '../components/LoadingScreen'
+import InlineLoader from '../components/InlineLoader'
+import ErrorState from '../components/ErrorState'
+import EmptyState from '../components/EmptyState'
 import styles from './StockHealth.module.css'
+
+function readSessionInventory(email) {
+  if (!email) return null
+  try {
+    const raw = sessionStorage.getItem(`cleaninv_inventory_${email}_all`)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function readSessionLocations(email) {
+  if (!email) return null
+  try {
+    const raw = sessionStorage.getItem(`cleaninv_locations_${email}`)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
 
 function effectiveThreshold(item, orgThreshold) {
   const t = Number(item.lowStockThreshold ?? 0)
@@ -87,30 +106,58 @@ export default function StockHealth() {
   const { t } = useTranslation()
   const { user } = useAuth()
 
-  const fetchInventory   = useStore((s) => s.fetchInventory)
-  const inventory        = useStore((s) => s.inventory)
-  const inventoryLoading = useStore((s) => s.inventoryLoading)
-  const inventoryError   = useStore((s) => s.inventoryError)
-  const fetchLocations   = useStore((s) => s.fetchLocations)
-  const locations        = useStore((s) => s.locations)
-  const locationsLoading = useStore((s) => s.locationsLoading)
+  const fetchInventory      = useStore((s) => s.fetchInventory)
+  const storeInventory      = useStore((s) => s.inventory)
+  const inventoryFetched    = useStore((s) => s.inventoryFetched)
+  const inventoryLocationId = useStore((s) => s.inventoryLocationId)
+  const inventoryLoading    = useStore((s) => s.inventoryLoading)
+  const inventoryError      = useStore((s) => s.inventoryError)
+  const invalidateInventory = useStore((s) => s.invalidateInventory)
+  const fetchLocations      = useStore((s) => s.fetchLocations)
+  const storeLocations      = useStore((s) => s.locations)
+  const locationsLoading    = useStore((s) => s.locationsLoading)
+
+  // Stale-first: seed from sessionStorage so content renders on first paint
+  const [items, setItems]               = useState(() => readSessionInventory(user?.email) ?? [])
+  const [localLocations, setLocalLocs]  = useState(() => readSessionLocations(user?.email) ?? [])
 
   useEffect(() => {
     if (!user) return
-    fetchLocations(user.email, user.orgId)
-    fetchInventory(user.email, user.orgId, 'all')
+    fetchLocations(user.email, user.orgId).catch(() => {})
+    fetchInventory(user.email, user.orgId, 'all').catch(() => {})
   }, [user, fetchLocations, fetchInventory])
+
+  // Sync store → local once fresh data arrives
+  useEffect(() => {
+    if (inventoryLoading) return
+    if (inventoryLocationId !== 'all') return
+    if (storeInventory.length === 0) return
+    setItems(storeInventory)
+  }, [storeInventory, inventoryLoading, inventoryLocationId])
+
+  useEffect(() => {
+    if (locationsLoading) return
+    if (storeLocations.length === 0) return
+    setLocalLocs(storeLocations)
+  }, [storeLocations, locationsLoading])
 
   const orgThreshold = Number(user?.lowStockThreshold ?? user?.low_stock_threshold ?? 0)
 
+  const hasStaleData = items.length > 0 || localLocations.length > 0
+  // Show full-screen loader only when there is truly nothing to display yet
+  const isFirstLoad  = !hasStaleData && !inventoryFetched
+  if (isFirstLoad) return <LoadingScreen />
+
+  const isRefreshing = (inventoryLoading || locationsLoading) && hasStaleData
+
   const accessibleIds = useMemo(
-    () => new Set(locations.map((l) => l.location_id)),
-    [locations]
+    () => new Set(localLocations.map((l) => l.location_id)),
+    [localLocations]
   )
 
   const flagged = useMemo(() => {
     const out = [], low = [], reorder = []
-    for (const raw of inventory) {
+    for (const raw of items) {
       const item = normalizeItem(raw)
       if (!item.track_stock) continue
       // Only filter by location once locations have loaded; empty set means still loading
@@ -122,11 +169,7 @@ export default function StockHealth() {
       else if (tier === 'reorder') reorder.push(item)
     }
     return { out, low, reorder }
-  }, [inventory, accessibleIds, orgThreshold])
-
-  const isFirstLoad =
-    (inventoryLoading || locationsLoading) && !inventory.length && !locations.length
-  if (isFirstLoad) return <LoadingScreen />
+  }, [items, accessibleIds, orgThreshold])
 
   const totalFlagged = flagged.out.length + flagged.low.length + flagged.reorder.length
 
@@ -136,6 +179,17 @@ export default function StockHealth() {
         <h1 className={styles.title}>{t('stock_health.title')}</h1>
         <p className={styles.subtitle}>{t('stock_health.subtitle')}</p>
       </div>
+
+      {isRefreshing && <InlineLoader />}
+
+      {inventoryError && (
+        <ErrorState
+          variant="banner"
+          message={t('stock_health.errorLoad')}
+          onRetry={() => { invalidateInventory(); fetchInventory(user.email, user.orgId, 'all').catch(() => {}) }}
+          retryLabel={t('inventory.retry')}
+        />
+      )}
 
       <div className={styles.summary}>
         <div className={`${styles.summaryCard} ${styles.summaryOut}`}>
@@ -152,16 +206,13 @@ export default function StockHealth() {
         </div>
       </div>
 
-      {inventoryError && (
-        <p className={styles.errorMsg}>{t('stock_health.errorLoad')}</p>
-      )}
-
       {totalFlagged === 0 && !inventoryLoading ? (
-        <div className={styles.empty}>
-          <FontAwesomeIcon icon={faCircleCheck} className={styles.emptyIcon} aria-hidden="true" />
-          <p className={styles.emptyTitle}>{t('stock_health.allClear')}</p>
-          <p className={styles.emptyHint}>{t('stock_health.allClearHint')}</p>
-        </div>
+        <EmptyState
+          icon={faCircleCheck}
+          iconCircle
+          title={t('stock_health.allClear')}
+          hint={t('stock_health.allClearHint')}
+        />
       ) : (
         <div className={styles.sections}>
           {flagged.out.length > 0 && (

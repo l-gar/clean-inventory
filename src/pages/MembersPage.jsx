@@ -19,6 +19,10 @@ import {
   apiAssignLocation,
   apiRemoveLocationAssignment,
 } from '../store/api'
+import InlineLoader from '../components/InlineLoader'
+import ErrorState from '../components/ErrorState'
+import EmptyState from '../components/EmptyState'
+import ConfirmBlock from '../components/ConfirmBlock'
 import styles from './MembersPage.module.css'
 
 const ROLE_KEYS = {
@@ -231,52 +235,29 @@ export default function MembersPage() {
       {tab === 'team' && (
         <div className={styles.tabContent}>
           {membersLoading ? (
-            <div className={styles.spinnerWrap}>
-              <FontAwesomeIcon icon={faSpinner} spin aria-hidden="true" />
-            </div>
+            <InlineLoader />
           ) : membersError ? (
-            <div className={styles.errorState}>
-              <p>{membersError}</p>
-              <button type="button" className={styles.retryBtn} onClick={() => { invalidateMembers(); fetchMembers(user.email, user.orgId) }}>
-                {t('members.retry')}
-              </button>
-            </div>
+            <ErrorState
+              message={membersError}
+              onRetry={() => { invalidateMembers(); fetchMembers(user.email, user.orgId) }}
+              retryLabel={t('members.retry')}
+            />
           ) : members.length === 0 ? (
-            <div className={styles.emptyState}>
-              <FontAwesomeIcon icon={faUserGroup} aria-hidden="true" />
-              <p>{t('members.empty_team')}</p>
-            </div>
+            <EmptyState icon={faUserGroup} title={t('members.empty_team')} />
           ) : (
             <ul className={styles.list}>
               {members.map(member => (
                 <li key={member.email} className={styles.card}>
                   {confirmRemove === member.email ? (
-                    <div className={styles.confirmBlock}>
-                      <p className={styles.confirmMsg}>
-                        {t('members.remove_confirm', { email: member.email })}
-                      </p>
-                      <div className={styles.confirmActions}>
-                        <button
-                          type="button"
-                          className={styles.btnDanger}
-                          onClick={() => handleRemoveMember(member.email)}
-                          disabled={removing}
-                        >
-                          {removing
-                            ? <FontAwesomeIcon icon={faSpinner} spin aria-hidden="true" />
-                            : t('members.remove_confirm_yes')}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.btnSecondaryInline}
-                          onClick={() => { setConfirmRemove(null); setRemoveError(null) }}
-                          disabled={removing}
-                        >
-                          {t('members.remove_confirm_no')}
-                        </button>
-                      </div>
-                      {removeError && <p className={styles.inlineError}>{removeError}</p>}
-                    </div>
+                    <ConfirmBlock
+                      message={t('members.remove_confirm', { email: member.email })}
+                      confirmLabel={t('members.remove_confirm_yes')}
+                      cancelLabel={t('members.remove_confirm_no')}
+                      onConfirm={() => handleRemoveMember(member.email)}
+                      onCancel={() => { setConfirmRemove(null); setRemoveError(null) }}
+                      busy={removing}
+                      error={removeError}
+                    />
                   ) : (
                     <>
                       <div className={styles.memberLeft}>
@@ -366,51 +347,33 @@ export default function MembersPage() {
           </div>
 
           {invitesLoading ? (
-            <div className={styles.spinnerWrap}>
-              <FontAwesomeIcon icon={faSpinner} spin aria-hidden="true" />
-            </div>
+            <InlineLoader />
           ) : invitesError ? (
-            <div className={styles.errorState}>
-              <p>{invitesError}</p>
-              <button type="button" className={styles.retryBtn} onClick={() => { invalidateInvites(); fetchInvites(user.email, user.orgId) }}>
-                {t('members.retry')}
-              </button>
-            </div>
+            <ErrorState
+              message={invitesError}
+              onRetry={() => { invalidateInvites(); fetchInvites(user.email, user.orgId) }}
+              retryLabel={t('members.retry')}
+            />
           ) : invites.length === 0 ? (
-            <div className={styles.emptyState}>
-              <FontAwesomeIcon icon={faLink} aria-hidden="true" />
-              <p>{t('members.empty_invites')}</p>
-              <span className={styles.emptyHint}>{t('members.empty_invites_hint')}</span>
-            </div>
+            <EmptyState
+              icon={faLink}
+              title={t('members.empty_invites')}
+              hint={t('members.empty_invites_hint')}
+            />
           ) : (
             <ul className={styles.list}>
               {invites.map(invite => (
                 <li key={invite.token} className={styles.card}>
                   {confirmRevoke === invite.token ? (
-                    <div className={styles.confirmBlock}>
-                      <p className={styles.confirmMsg}>{t('members.revoke_confirm')}</p>
-                      <div className={styles.confirmActions}>
-                        <button
-                          type="button"
-                          className={styles.btnDanger}
-                          onClick={() => handleRevokeInvite(invite.token)}
-                          disabled={revoking}
-                        >
-                          {revoking
-                            ? <FontAwesomeIcon icon={faSpinner} spin aria-hidden="true" />
-                            : t('members.revoke_confirm_yes')}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.btnSecondaryInline}
-                          onClick={() => { setConfirmRevoke(null); setRevokeError(null) }}
-                          disabled={revoking}
-                        >
-                          {t('members.revoke_confirm_no')}
-                        </button>
-                      </div>
-                      {revokeError && <p className={styles.inlineError}>{revokeError}</p>}
-                    </div>
+                    <ConfirmBlock
+                      message={t('members.revoke_confirm')}
+                      confirmLabel={t('members.revoke_confirm_yes')}
+                      cancelLabel={t('members.revoke_confirm_no')}
+                      onConfirm={() => handleRevokeInvite(invite.token)}
+                      onCancel={() => { setConfirmRevoke(null); setRevokeError(null) }}
+                      busy={revoking}
+                      error={revokeError}
+                    />
                   ) : (
                     <>
                       <div className={styles.inviteInfo}>

@@ -61,14 +61,15 @@ Acceptance criteria:
 
 Issue title suggestion: `ui-refactor: extract shared error-empty-confirm components`
 
-- [ ] Create reusable `ErrorState` component (message + retry action).
-- [ ] Create reusable `EmptyState` component (icon/title/body/action).
-- [ ] Create reusable inline confirmation component/block for delete/revoke/remove flows.
-- [ ] Replace repeated JSX patterns in:
+- [x] Create reusable `ErrorState` component (message + retry action).
+- [x] Create reusable `EmptyState` component (icon/title/body/action).
+- [x] Create reusable inline confirmation component/block for delete/revoke/remove flows.
+- [x] Create reusable `InlineLoader` component (extracted from InventoryList loading bar — replaces all non-full-screen loading states).
+- [x] Replace repeated JSX patterns in:
   - `src/pages/InventoryList.jsx`
   - `src/pages/MembersPage.jsx`
   - `src/pages/Locations.jsx`
-  - `src/pages/Settings.jsx` (where applicable)
+  - `src/pages/Settings.jsx` (no applicable patterns)
 - [ ] Verify CSS module class mappings do not regress spacing/alignment.
 
 Acceptance criteria:
@@ -79,10 +80,10 @@ Acceptance criteria:
 
 Issue title suggestion: `perf: optimize scan lookup with store-level barcode index`
 
-- [ ] Add store-level helper for barcode lookup against cached inventory.
-- [ ] Consider transient barcode index map for `locationId='all'` inventory cache.
-- [ ] Keep existing fallback path to server barcode lookup.
-- [ ] Update `src/pages/ScanUpdate.jsx` to use helper/index first.
+- [x] Add store-level helper for barcode lookup against cached inventory.
+- [x] Consider transient barcode index map for `locationId='all'` inventory cache.
+- [x] Keep existing fallback path to server barcode lookup.
+- [x] Update `src/pages/ScanUpdate.jsx` to use helper/index first.
 
 Acceptance criteria:
 - [ ] Repeated scans in a session avoid unnecessary heavy work.

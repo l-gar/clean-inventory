@@ -57,6 +57,20 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - After a mutation, always invalidate the affected slice then call the fetch action to get fresh data — do not patch local state manually
 - Store clears on logout and page refresh — add new slices to `clearStore`
 
+## Loading states
+- Two loading components only — never add a third:
+  - `LoadingScreen` — full-screen animated logo; use only for initial page load when zero stale data exists
+  - `InlineLoader` — thin 3px animated bar; use for background refreshes over existing content
+- Never use `faSpinner` or any other spinner for page/section-level loading — it's `LoadingScreen` or `InlineLoader`
+- Pages that fetch remote data must seed local state from sessionStorage so stale content displays instantly on hard refresh and navigation; show `InlineLoader` while the background refresh runs
+- `isFirstLoad` pattern: `!hasStaleData && !sliceFetchedTimestamp` — only show `LoadingScreen` when there is truly nothing to display
+
+## Shared UI components
+- Error states → `ErrorState` (`src/components/ErrorState.jsx`): `variant="banner"` (red inline, e.g. InventoryList) or default centered (e.g. MembersPage, Locations)
+- Empty/no-data states → `EmptyState` (`src/components/EmptyState.jsx`): pass `icon`, `title`, optional `body`/`hint`/`action`; use `iconCircle` for prominent full-page empty states, `fill` for full-height centering
+- Inline delete/revoke/remove confirmations → `ConfirmBlock` (`src/components/ConfirmBlock.jsx`): pass `message`, `confirmLabel`, `cancelLabel`, `onConfirm`, `onCancel`, `busy`, `error`
+- Never re-implement these patterns inline in a page — always use the shared component
+
 ## Routing + deploy
 - HashRouter links always — never BrowserRouter
 - Base: /clean-inventory/ · npm run deploy → GitHub Pages

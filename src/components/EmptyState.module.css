@@ -1,0 +1,93 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.fill {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Default icon: FA icon at 2.2rem, muted green */
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.iconWrap :global(.svg-inline--fa) {
+  font-size: 2.2rem;
+  color: var(--green-200);
+}
+
+/* Circle icon: FA icon inside a green circle — prominent empty state */
+.iconCircle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--green-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.iconCircle :global(.svg-inline--fa) {
+  font-size: 2rem;
+  color: var(--green-600);
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  margin: 0;
+}
+
+.titleLarge {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.body {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 0 8px;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--gray-400);
+  max-width: 280px;
+  margin: 0;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: var(--green-600);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.actionBtn:hover {
+  background: var(--green-700);
+  color: #fff;
+}

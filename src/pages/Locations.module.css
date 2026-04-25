@@ -136,17 +136,6 @@
   padding-bottom: 152px; /* FAB clearance + bottom nav (56px) */
 }
 
-/* ── Centered helper — error state ──────────────────────────────────────── */
-.centered {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 32px 24px;
-}
-
 /* ── List header (shown above the card list when locations exist) ─────────── */
 .listHeader {
   padding: 24px 20px 12px;
@@ -163,51 +152,6 @@
   font-size: 0.875rem;
   color: var(--gray-500);
   margin: 0;
-}
-
-/* ── Empty state — centered in the content flex column ──────────────────── */
-.empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 32px 56px;
-  text-align: center;
-  gap: 12px;
-}
-
-.emptyIcon {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--green-100);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.emptyIcon svg,
-.emptyIcon .svg-inline--fa {
-  width: 36px;
-  height: 36px;
-  color: var(--green-600);
-}
-
-.emptyTitle {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--gray-900);
-  margin: 0;
-}
-
-.emptyBody {
-  font-size: 0.9rem;
-  color: var(--gray-500);
-  line-height: 1.6;
-  max-width: 300px;
-  margin: 0 0 8px;
 }
 
 /* ── Location list ──────────────────────────────────────────────────────── */
@@ -303,32 +247,6 @@
 .iconBtnDanger:hover {
   background: var(--red-50, #fff5f5);
   color: var(--red-600, #dc2626);
-}
-
-/* ── Delete confirmation (inline inside card) ───────────────────────────── */
-.deleteConfirm {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.deleteMsg {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--gray-700);
-  margin: 0;
-}
-
-.deleteActions {
-  display: flex;
-  gap: 8px;
-}
-
-.deleteErrorText {
-  font-size: 0.8rem;
-  color: var(--red-600, #dc2626);
-  margin: 0;
 }
 
 /* ── FAB ────────────────────────────────────────────────────────────────── */
@@ -521,35 +439,6 @@
 .btnSecondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.btnDanger {
-  padding: 8px 18px;
-  border: none;
-  border-radius: 8px;
-  background: var(--red-600, #dc2626);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.btnDanger:hover {
-  background: var(--red-700, #b91c1c);
-}
-
-.btnDanger:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* ── Error text ─────────────────────────────────────────────────────────── */
-.loadErrorText {
-  font-size: 0.9rem;
-  color: var(--gray-600);
-  text-align: center;
-  margin: 0;
 }
 
 /* ── In-content back button (app mode — Layout provides header) ─────────── */
