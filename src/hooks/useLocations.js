@@ -31,7 +31,8 @@ export function useLocations() {
   const locationsFetched = useStore((s) => s.locationsFetched)
   const fetchLocations   = useStore((s) => s.fetchLocations)
 
-  const isMember = user?.role === 'org_member'
+  const isMember  = user?.role === 'org_member'
+  const isManager = user?.role === 'manager'
 
   useEffect(() => {
     if (!isMember && user?.email && user?.orgId) {
@@ -55,5 +56,17 @@ export function useLocations() {
   // don't flash an empty / "no locations" state for one render cycle.
   const loading = locationsLoading || (!locationsFetched && !locationsError)
 
+  // manager: filter store locations to only those assigned to this user.
+  // assignedLocations is guaranteed by the backend as an array of strings.
+  if (isManager) {
+    const assignedIds = new Set((user?.assignedLocations ?? []).map(String))
+    return {
+      locations: locations.filter(l => assignedIds.has(String(l.location_id))),
+      loading,
+      error: locationsError,
+    }
+  }
+
+  // org_owner: all org locations.
   return { locations, loading, error: locationsError }
 }

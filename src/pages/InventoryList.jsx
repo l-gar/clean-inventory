@@ -182,13 +182,23 @@ export default function InventoryList() {
   // org_member → no filter shown
 
   // org_owner gets a sessionStorage seed so tabs are visible immediately.
-  // manager / org_member also seed from assignedLocations when available so a
-  // hard refresh can restore the location context before the first fetch.
+  // manager seeds from session cache filtered to assigned IDs (names resolve immediately
+  // on warm cache; falls back to raw ID strings on first load until the effect runs).
+  // org_member seeds from assignedLocations in the auth context.
   const [availableLocations, setAvailableLocations] = useState(() => {
     if (isOwner) return (readSessionLocations(user?.email) ?? []).map(normalizeLocation)
 
-    const assigned = user?.assignedLocations ?? user?.locationIds ?? user?.assigned_locations ?? []
-    return assigned.map(normalizeLocation)
+    if (isManager) {
+      const assignedIds = new Set((user?.assignedLocations ?? []).map(String))
+      const sessionLocs = readSessionLocations(user?.email)
+      if (sessionLocs && assignedIds.size > 0) {
+        const filtered = sessionLocs.map(normalizeLocation).filter(l => assignedIds.has(l.location_id))
+        if (filtered.length > 0) return filtered
+      }
+      return (user?.assignedLocations ?? []).map(normalizeLocation)
+    }
+
+    return (user?.assignedLocations ?? []).map(normalizeLocation)
   })
 
   // locationsLoaded gates the inventory fetch so we never call getInventory with
@@ -322,41 +332,20 @@ export default function InventoryList() {
           // Non-fatal — tabs show "All" only; must unblock so filter resolves.
           setLocationsLoaded(true)
         })
-    } else if (isManager) {
+    } else if (isManager || isMember) {
       if (!user?.orgId) return
-      // Fetch all org locations to get proper names, then filter to assigned ones.
-      // Handles field-name variations: assignedLocations, locationIds, assigned_locations.
-      const rawAssigned = user?.assignedLocations ?? user?.locationIds ?? user?.assigned_locations ?? []
-      const assignedIds = new Set(
-        rawAssigned.map(l => (typeof l === 'string' ? l : (l.location_id ?? l.locationId ?? l.id ?? '')))
-      )
+      // assignedLocations is guaranteed by the backend: always an array of strings.
+      // Fetch all org locations to resolve proper names, then filter to assigned IDs only.
+      const assignedIds = new Set((user?.assignedLocations ?? []).map(String))
       if (assignedIds.size === 0) return
       storeFetchLocations(user.email, user.orgId)
         .then((locs) => {
           const filtered = locs.map(normalizeLocation).filter(l => assignedIds.has(l.location_id))
           if (filtered.length > 0) setAvailableLocations(filtered)
         })
-        .catch(() => {
-          // Keep the auth-context seed set in the initializer
-        })
-    } else if (isMember) {
-      if (!user?.orgId) return
-      const rawAssigned = user?.assignedLocations ?? user?.locationIds ?? user?.assigned_locations ?? []
-      const assignedIds = new Set(
-        rawAssigned.map(l => (typeof l === 'string' ? l : (l.location_id ?? l.locationId ?? l.id ?? '')))
-      )
-      if (assignedIds.size === 0) return
-      storeFetchLocations(user.email, user.orgId)
-        .then((locs) => {
-          const normalized = locs.map(normalizeLocation)
-          const filtered = normalized.filter(l => assignedIds.has(l.location_id))
-          if (filtered.length > 0) setAvailableLocations(filtered)
-        })
-        .catch(() => {
-          // Keep auth-context seed
-        })
+        .catch(() => {})
     }
-  }, [isOwner, isManager, isMember, storeFetchLocations, user?.email, user?.orgId, user?.assignedLocations, user?.locationIds])
+  }, [isOwner, isManager, isMember, storeFetchLocations, user?.email, user?.orgId, user?.assignedLocations])
 
   // ── Validate saved location against loaded locations ─────────────────────
   // If the saved default no longer exists (location was deleted), reset to
