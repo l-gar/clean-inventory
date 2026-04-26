@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -70,6 +71,14 @@ export default function Locations() {
   }, [user.email, user.orgId, t, fetchLocations])
 
   useEffect(() => { loadLocations() }, [loadLocations])
+
+  usePullToRefresh(useCallback(async () => {
+    invalidateLocations()
+    try {
+      const locs = await fetchLocations(user.email, user.orgId)
+      setLocations(locs)
+    } catch {}
+  }, [invalidateLocations, fetchLocations, user.email, user.orgId]))
 
   // ── Sheet helpers ─────────────────────────────────────────────────────────
   function openAdd() {

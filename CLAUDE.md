@@ -27,6 +27,7 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - Touch targets: minimum 44×44px (Apple HIG) — use padding, not width/height alone
 - Avoid `hover`-only interactions — pair every hover state with a matching `active` state
 - `webkit-tap-highlight-color: transparent` on interactive elements to suppress the grey flash on iOS Safari
+- Pull-to-refresh is the standard reload mechanism for any page that fetches a list — call `usePullToRefresh(callback)` from `src/hooks/usePullToRefresh.js`; the gesture is handled globally by Layout and calls the registered callback on release
 
 ## i18n
 - All user-facing text via t() hook — no hardcoded English strings

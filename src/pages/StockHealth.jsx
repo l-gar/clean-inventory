@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -126,6 +127,11 @@ export default function StockHealth() {
     fetchLocations(user.email, user.orgId).catch(() => {})
     fetchInventory(user.email, user.orgId, 'all').catch(() => {})
   }, [user, fetchLocations, fetchInventory])
+
+  usePullToRefresh(useCallback(async () => {
+    invalidateInventory()
+    await fetchInventory(user.email, user.orgId, 'all').catch(() => {})
+  }, [invalidateInventory, fetchInventory, user.email, user.orgId]))
 
   // Sync store → local once fresh data arrives
   useEffect(() => {

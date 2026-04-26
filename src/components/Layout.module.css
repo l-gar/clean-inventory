@@ -79,3 +79,27 @@
   padding-bottom: 72px;
   min-height: 0;
 }
+
+/* Pull-to-refresh indicator */
+.ptrWrap {
+  overflow: hidden;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: height 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.ptrDragging {
+  transition: none;
+}
+
+.ptrIcon {
+  font-size: 1rem;
+  color: var(--accent);
+  transition: transform 0.2s ease, opacity 0.1s;
+}
+
+.ptrIconReady {
+  transform: rotate(180deg);
+}

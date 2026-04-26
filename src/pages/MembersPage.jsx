@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -83,6 +84,15 @@ export default function MembersPage() {
     fetchInvites(user.email, user.orgId).catch(() => {})
     fetchLocations(user.email, user.orgId).catch(() => {})
   }, [fetchMembers, fetchInvites, fetchLocations, user.email, user.orgId])
+
+  usePullToRefresh(useCallback(async () => {
+    invalidateMembers()
+    invalidateInvites()
+    await Promise.allSettled([
+      fetchMembers(user.email, user.orgId),
+      fetchInvites(user.email, user.orgId),
+    ])
+  }, [invalidateMembers, invalidateInvites, fetchMembers, fetchInvites, user.email, user.orgId]))
 
   // ── Location sheet ──────────────────────────────────────────────────────────
 

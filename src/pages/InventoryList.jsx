@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -400,6 +401,8 @@ export default function InventoryList() {
     },
     [user.email, user.orgId, t, storeFetchInventory, storeInvalidateInventory],
   )
+
+  usePullToRefresh(useCallback(() => fetchInventory(selectedLocationId, true), [fetchInventory, selectedLocationId]))
 
   // Fetch on mount and whenever the selected location changes, but only once
   // the location context has been restored and validated after a hard refresh.
