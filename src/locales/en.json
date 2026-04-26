@@ -59,7 +59,7 @@
   "notes": "Notes",
   "additional_notes": "Additional notes",
   "notes_placeholder": "Storage instructions, supplier info…",
-  "edit_item": "Edit Item",
+  "edit_item": "Edit",
   "edit_item_save_error": "Could not save changes. Please try again.",
   "edit_item_not_found": "Item not found. It may have been deleted.",
   "go_to_inventory": "Go to Inventory",

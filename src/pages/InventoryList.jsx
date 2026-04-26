@@ -69,13 +69,13 @@ function getCategoryTone(category) {
   return 'neutral'
 }
 
-function StatusBadge({ quantity, threshold }) {
+function StatusBadge({ quantity, threshold, trackStock }) {
   const { t } = useTranslation()
   const qty = Number(quantity)
   if (qty === 0) {
     return <span className={`${styles.badge} ${styles.badgeOut}`}>{t('inventory.badgeOut')}</span>
   }
-  if (qty <= threshold) {
+  if (trackStock && qty <= threshold) {
     return <span className={`${styles.badge} ${styles.badgeLow}`}>{t('inventory.badgeLow')}</span>
   }
   return <span className={`${styles.badge} ${styles.badgeOk}`}>{t('inventory.badgeOk')}</span>
@@ -624,7 +624,7 @@ export default function InventoryList() {
           const qty = Number(item.quantity ?? 0)
           const itemThreshold = item.lowStockThreshold || threshold
           const isOut = qty === 0
-          const isLow = !isOut && qty <= itemThreshold
+          const isLow = item.track_stock && !isOut && qty <= itemThreshold
           const tone = getCategoryTone(item.category)
           const dotColor = {
             chemicals: 'var(--accent)',
@@ -644,7 +644,7 @@ export default function InventoryList() {
               <div className={styles.itemMain}>
                 <div className={styles.itemNameRow}>
                   <span className={styles.itemName}>{item.itemName}</span>
-                  <StatusBadge quantity={qty} threshold={itemThreshold} />
+                  <StatusBadge quantity={qty} threshold={itemThreshold} trackStock={item.track_stock} />
                 </div>
                 <div className={styles.itemMetaRow}>
                   <span className={styles.categoryDot} style={{ background: dotColor }} />

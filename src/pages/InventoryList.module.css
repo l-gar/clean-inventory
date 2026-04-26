@@ -526,11 +526,13 @@
   }
 
   .tableHeader {
-    display: none;
+    grid-template-columns: minmax(0, 1fr) 56px 84px;
+    padding: 6px 12px 6px 16px;
+    column-gap: 8px;
   }
 
   .item {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) 56px 84px;
     grid-template-areas: 'main qty actions';
     padding: 11px 12px 11px 16px;
     gap: 4px 8px;
@@ -539,28 +541,40 @@
 
   .itemMain    { grid-area: main; }
   .qtyCell     { grid-area: qty; justify-content: flex-end; align-self: center; }
-  .actionsCell { grid-area: actions; align-items: center; }
+  .actionsCell { grid-area: actions; }
 
   .editLink {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border-radius: 10px;
+    width: 100%;
+    height: 30px;
+    padding: 0 6px;
+  }
+
+  .editLink svg {
+    display: none;
   }
 
   .editLinkText {
-    display: none;
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .transferBtn {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border-radius: 10px;
+    width: 100%;
+    height: 30px;
+    padding: 0 6px;
+  }
+
+  .transferBtn svg {
+    display: none;
   }
 
   .transferBtnText {
-    display: none;
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .qtyValue {

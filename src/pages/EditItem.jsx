@@ -41,9 +41,12 @@ export default function EditItem() {
   const { state: routeState } = useLocation()
   const navigate            = useNavigate()
   const { user }            = useAuth()
-  const storeInventory      = useStore((s) => s.inventory)
-  const invalidateInventory = useStore((s) => s.invalidateInventory)
-  const invalidateCatalog   = useStore((s) => s.invalidateCatalog)
+  const storeInventory       = useStore((s) => s.inventory)
+  const invalidateInventory  = useStore((s) => s.invalidateInventory)
+  const invalidateCatalog    = useStore((s) => s.invalidateCatalog)
+  const fetchInventory       = useStore((s) => s.fetchInventory)
+  const fetchCatalog         = useStore((s) => s.fetchCatalog)
+  const inventoryLocationId  = useStore((s) => s.inventoryLocationId)
 
   const isOwner    = user?.role === 'org_owner'
   const isManager  = user?.role === 'manager'
@@ -114,6 +117,7 @@ export default function EditItem() {
           description: form.description,
           category:    form.category,
           unit:        form.unit,
+          trackStock:  form.trackStock,
         })
       }
 
@@ -130,6 +134,9 @@ export default function EditItem() {
 
       invalidateInventory()
       if (canEditAll) invalidateCatalog()
+      // Prime fresh data into store + sessionStorage during the splash delay
+      fetchInventory(user.email, user.orgId, inventoryLocationId ?? 'all')
+      if (canEditAll) fetchCatalog(user.email, user.orgId)
       setSaveSuccess(true)
       setTimeout(() => navigate('/inventory'), 1500)
     } catch (err) {

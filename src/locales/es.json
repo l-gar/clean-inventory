@@ -59,7 +59,7 @@
   "notes": "Notas",
   "additional_notes": "Notas adicionales",
   "notes_placeholder": "Instrucciones de almacenamiento, proveedor…",
-  "edit_item": "Editar Artículo",
+  "edit_item": "Editar",
   "edit_item_save_error": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
   "edit_item_not_found": "Artículo no encontrado. Es posible que haya sido eliminado.",
   "go_to_inventory": "Ir al Inventario",
