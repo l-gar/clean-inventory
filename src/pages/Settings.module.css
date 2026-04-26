@@ -1,62 +1,143 @@
+/* ── Page ────────────────────────────────────────────────────────────────── */
 .page {
-  padding-bottom: 32px;
+  display: flex;
+  flex-direction: column;
   min-height: 100%;
+  background: var(--color-page);
 }
 
-.pageHeader {
-  padding: 20px 16px 12px;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--green-800);
-}
-
-.subtitle {
-  font-size: 0.875rem;
-  color: var(--gray-500);
-  margin-top: 2px;
-}
-
-.sections {
-  padding: 16px;
+.body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 16px;
+  padding-bottom: 32px;
 }
 
+/* ── Profile header ──────────────────────────────────────────────────────── */
+.profileCard {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px;
+}
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--green-100);
+  color: var(--green-800);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.profileName {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileEmail {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 110px;
+}
+
+.roleBadge {
+  background: var(--green-100);
+  color: var(--green-800);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.profileOrgName {
+  font-size: 11px;
+  color: var(--gray-400);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+  text-align: right;
+}
+
+/* ── Section ─────────────────────────────────────────────────────────────── */
 .section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.sectionTitle {
-  font-size: 0.75rem;
+.sectionLabel {
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: var(--green-600);
-  padding-left: 4px;
+  color: var(--gray-400);
+  margin-left: 4px;
 }
 
 .card {
   background: var(--color-surface);
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
+/* ── Icon badge ──────────────────────────────────────────────────────────── */
+.badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Generic row ─────────────────────────────────────────────────────────── */
 .row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 13px 16px;
+  padding: 12px 16px;
 }
 
 .rowText {
@@ -68,18 +149,20 @@
 }
 
 .rowLabel {
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--gray-800);
 }
 
 .rowDesc {
-  font-size: 0.78rem;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--gray-400);
 }
 
-.rowControl {
-  flex: 0 0 auto;
+.rowError {
+  font-size: 11.5px;
+  color: var(--red-600);
 }
 
 .divider {
@@ -88,7 +171,7 @@
   margin: 0 16px;
 }
 
-/* Toggle */
+/* ── Toggle ──────────────────────────────────────────────────────────────── */
 .toggle {
   width: 44px;
   height: 26px;
@@ -100,13 +183,15 @@
   align-items: center;
   transition: background 0.2s;
   cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .toggleOn {
-  background: var(--green-500);
+  background: var(--green-600);
 }
 
-.toggleThumb {
+.thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -116,294 +201,396 @@
   display: block;
 }
 
-.toggleOn .toggleThumb {
+.toggleOn .thumb {
   transform: translateX(18px);
 }
 
-/* Inputs */
-.textInput {
-  border: 1.5px solid var(--gray-200);
-  border-radius: 7px;
-  padding: 7px 10px;
-  font-size: 0.9rem;
-  color: var(--gray-800);
-  background: var(--color-surface);
-  outline: none;
-  width: 160px;
-  text-align: right;
-}
-
-.textInput:focus {
-  border-color: var(--green-500);
-}
-
-.selectInput {
-  border: 1.5px solid var(--gray-200);
-  border-radius: 7px;
-  padding: 7px 10px;
-  font-size: 0.9rem;
-  color: var(--gray-800);
-  outline: none;
-  background: var(--color-surface);
-}
-
-.selectInput:focus {
-  border-color: var(--green-500);
-}
-
-.numericInput {
+/* ── Nav row (chevron) ───────────────────────────────────────────────────── */
+.navRow {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 }
 
-.thresholdBlock {
+.navRow:active {
+  background: var(--gray-50);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.navValue {
+  font-size: 13px;
+  color: var(--gray-400);
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navChevron {
+  color: var(--gray-300);
+  font-size: 12px;
+}
+
+/* ── Business name row ───────────────────────────────────────────────────── */
+.businessRow {
   display: flex;
   flex-direction: column;
+  padding: 12px 16px;
   gap: 10px;
 }
 
-.thresholdSaveBtn {
-  align-self: flex-end;
-  padding: 8px 20px;
-  margin: 0px 5px 5px 0;
-  border-radius: 8px;
-  border: none;
-  background: var(--green-600);
-  color: #fff;
-  font-size: 0.88rem;
-  font-weight: 600;
+.businessRowTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.pencilBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: none;
   cursor: pointer;
-  transition: background 0.15s;
+  color: var(--gray-500);
+  font-size: 14px;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.thresholdSaveBtn:not(:disabled):hover {
-  background: var(--green-700);
+.pencilBtn:active {
+  background: var(--gray-50);
 }
 
-.thresholdSaveBtn:disabled {
+.businessEditForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeUp 0.15s ease;
+}
+
+.editInput {
+  border: 1.5px solid var(--green-400);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  background: var(--color-surface);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  width: 100%;
+}
+
+.editInput:focus {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.cancelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 9px;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cancelBtn:active {
+  background: var(--gray-50);
+}
+
+.cancelBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+.saveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: var(--green-600);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.saveBtn:not(:disabled):active {
+  background: var(--green-700);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Threshold ───────────────────────────────────────────────────────────── */
+.numericInput {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .numberField {
-  border: 1.5px solid var(--gray-200);
-  border-radius: 7px;
+  width: 52px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 9px;
   padding: 7px 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--gray-800);
   background: var(--color-surface);
-  width: 60px;
   text-align: center;
   outline: none;
 }
 
 .numberField:focus {
-  border-color: var(--green-500);
+  border-color: var(--green-400);
 }
 
 .numberSuffix {
-  font-size: 0.9rem;
-  color: var(--gray-500);
-}
-
-/* Action rows */
-.actionRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  background: none;
-  border: none;
-  width: 100%;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--green-700);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.1s;
-}
-
-.actionRow:active {
-  background: var(--green-50);
-}
-
-.actionRow svg {
-  width: 18px;
-  height: 18px;
-  color: var(--green-500);
-}
-
-.actionDanger {
-  color: var(--red-600);
-}
-
-.actionDanger svg {
-  color: var(--red-400);
-}
-
-.actionDanger:active {
-  background: var(--red-50);
-}
-
-/* Business name owner controls */
-.orgNameControl {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  flex: 0 1 320px;
-  min-width: 0;
-}
-
-.businessNameLabel {
-  white-space: nowrap;
-}
-
-.businessNameRowEditing {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.businessNameRowEditing .rowText {
-  width: 100%;
-}
-
-.businessNameRowEditing .orgNameControl {
-  width: 100%;
-  flex: none;
-  justify-content: stretch;
-}
-
-.orgNameEditForm {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  width: 100%;
-  max-width: 100%;
-}
-
-.inlineEditTrigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: 0;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.inlineEdit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.orgNameInput {
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-}
-
-.inlineActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-.editInlineBtn,
-.cancelInlineBtn,
-.saveInlineBtn {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  color: var(--gray-400);
 }
 
-.editInlineBtn,
-.cancelInlineBtn {
-  border: 1px solid var(--gray-200);
+.thresholdSaveWrap {
+  padding: 0 16px 12px;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeUp 0.15s ease;
+}
+
+/* ── Language select ─────────────────────────────────────────────────────── */
+.langSelect {
+  border: 1.5px solid var(--color-border);
+  border-radius: 9px;
+  padding: 6px 28px 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-800);
   background: var(--color-surface);
-  color: var(--gray-700);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239ca3af'%3E%3Cpath d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 18px;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.editInlineBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: 999px;
+.langSelect:focus {
+  border-color: var(--green-400);
 }
 
-.editInlineBtn svg {
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
   width: 14px;
   height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
 }
 
-.inlineEditTrigger:hover .editInlineBtn,
-.cancelInlineBtn:not(:disabled):hover {
-  border-color: var(--gray-300);
+/* ── Version footer ──────────────────────────────────────────────────────── */
+.version {
+  font-size: 11.5px;
+  color: var(--gray-300);
+  font-weight: 500;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* ── Default Location sheet ──────────────────────────────────────────────── */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.backdropOn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-radius: 20px 20px 0 0;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 41;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.sheetOn {
+  transform: translateY(0);
+}
+
+.sheetHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+
+.sheetHeader {
+  padding: 14px 20px 4px;
+  flex-shrink: 0;
+}
+
+.sheetTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.sheetSubtitle {
+  font-size: 12.5px;
+  color: var(--gray-400);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.sheetList {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Location option ─────────────────────────────────────────────────────── */
+.locOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+}
+
+.locOption:active {
   background: var(--gray-50);
 }
 
-.saveInlineBtn {
-  border: none;
-  border: none;
-  background: var(--green-500);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+.locOptionOn {
+  border: 2px solid var(--green-400);
+  background: var(--green-50);
 }
 
-.saveInlineBtn:disabled {
-  background: var(--green-300);
-  cursor: not-allowed;
+.locOptionBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--gray-100);
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.saveInlineBtn:not(:disabled):active {
-  background: var(--green-700);
+.locOptionBadgeOn {
+  background: var(--green-100);
+  color: var(--green-600);
 }
 
-.cancelInlineBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Read-only value display (manager / org_member) */
-.readOnlyValue {
-  font-size: 0.9rem;
-  color: var(--gray-600);
-  text-align: right;
+.locOptionLabel {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
 }
 
-@media (max-width: 380px) {
-  .businessNameLabel {
-    white-space: normal;
-  }
+.locOptionLabelOn {
+  color: var(--green-800);
 }
 
-/* Inline error below label */
-.rowError {
-  font-size: 0.78rem;
-  color: var(--red-600);
+.locOptionCheck {
+  color: var(--green-500);
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-/* Version */
-.version {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--gray-300);
-  margin-top: 4px;
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

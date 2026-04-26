@@ -27,8 +27,15 @@
   --gray-900: #111827;
 
   --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
   --amber-500: #f59e0b;
   --amber-600: #d97706;
+
+  --emerald-50: #ecfdf5;
+  --emerald-500: #10b981;
+
+  --violet-50: #f5f3ff;
+  --violet-600: #7c3aed;
 
   --red-50:  #fef2f2;
   --red-100: #fee2e2;
@@ -116,6 +123,13 @@ html.dark {
   /* Status palette */
   --red-50:   #2c1515;
   --amber-50: #2c2010;
+  --amber-100: #2c1f07;
+
+  --emerald-50: #0a1c14;
+  --emerald-500: #34d399;
+
+  --violet-50: #160e24;
+  --violet-600: #a78bfa;
 }
 
 html.dark h1,

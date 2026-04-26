@@ -311,7 +311,8 @@
     },
     "organization": {
       "manageLocations": "Manage Locations",
-      "manageLocationsDesc": "Add, rename, or remove storage locations"
+      "manageLocationsDesc": "Add, rename, or remove storage locations",
+      "locCount": "{{count}} locations"
     },
     "business": {
       "businessName": "Business Name",
@@ -321,7 +322,13 @@
       "orgNameSaving": "Saving…",
       "orgNameError": "Could not save. Please try again.",
       "defaultLocation": "Default Location",
-      "defaultLocationDesc": "Pre-selected filter for inventory and adding items"
+      "defaultLocationDesc": "Pre-selected filter for inventory and adding items",
+      "noDefault": "No default"
+    },
+    "role": {
+      "org_owner": "Owner",
+      "manager": "Manager",
+      "org_member": "Member"
     },
     "alerts": {
       "lowStock": "Low Stock Alerts",

@@ -311,7 +311,8 @@
     },
     "organization": {
       "manageLocations": "Administrar Ubicaciones",
-      "manageLocationsDesc": "Agrega, renombra o elimina ubicaciones de almacenamiento"
+      "manageLocationsDesc": "Agrega, renombra o elimina ubicaciones de almacenamiento",
+      "locCount": "{{count}} ubicaciones"
     },
     "business": {
       "businessName": "Nombre del Negocio",
@@ -321,7 +322,13 @@
       "orgNameSaving": "Guardando…",
       "orgNameError": "No se pudo guardar. Inténtalo de nuevo.",
       "defaultLocation": "Ubicación Predeterminada",
-      "defaultLocationDesc": "Filtro predeterminado para inventario y agregar artículos"
+      "defaultLocationDesc": "Filtro predeterminado para inventario y agregar artículos",
+      "noDefault": "Sin predeterminada"
+    },
+    "role": {
+      "org_owner": "Propietario",
+      "manager": "Gerente",
+      "org_member": "Miembro"
     },
     "alerts": {
       "lowStock": "Alertas de Stock Bajo",

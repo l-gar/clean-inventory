@@ -3,14 +3,54 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  faBell,
+  faBuilding,
+  faCheck,
   faChevronRight,
-  faDownload,
+  faGlobe,
+  faLocationDot,
+  faMoon,
   faPenToSquare,
+  faSliders,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
+import { useLocations } from '../hooks/useLocations'
 import { apiUpdateOrgName, apiUpdateThreshold } from '../store/api'
-import LocationSelect from '../components/LocationSelect'
 import styles from './Settings.module.css'
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function getInitials(email) {
+  const local = (email ?? '').split('@')[0]
+  const parts = local.split(/[._+]/).filter(Boolean)
+  if (!parts.length) return '?'
+  if (parts.length === 1) return parts[0][0].toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function getDisplayName(email) {
+  const local = (email ?? '').split('@')[0]
+  return local
+    .split(/[._+]/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+// ── primitives ────────────────────────────────────────────────────────────────
+
+function Spinner() {
+  return <span className={styles.spinner} aria-hidden="true" />
+}
+
+function IconBadge({ icon, bg, fg }) {
+  return (
+    <span className={styles.badge} style={{ background: bg, color: fg }}>
+      <FontAwesomeIcon icon={icon} aria-hidden="true" />
+    </span>
+  )
+}
 
 function Toggle({ checked, onChange }) {
   return (
@@ -21,42 +61,95 @@ function Toggle({ checked, onChange }) {
       className={`${styles.toggle} ${checked ? styles.toggleOn : ''}`}
       onClick={() => onChange(!checked)}
     >
-      <span className={styles.toggleThumb} />
+      <span className={styles.thumb} />
     </button>
   )
 }
 
-function SettingsRow({ label, description, children }) {
+function Divider() {
+  return <div className={styles.divider} />
+}
+
+// ── Default Location sheet ────────────────────────────────────────────────────
+
+function DefaultLocationSheet({ open, onClose, locations, value, onChange }) {
+  const { t } = useTranslation()
   return (
-    <div className={styles.row}>
-      <div className={styles.rowText}>
-        <span className={styles.rowLabel}>{label}</span>
-        {description && <span className={styles.rowDesc}>{description}</span>}
+    <>
+      <div
+        className={`${styles.backdrop} ${open ? styles.backdropOn : ''}`}
+        onClick={onClose}
+      />
+      <div
+        className={`${styles.sheet} ${open ? styles.sheetOn : ''}`}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className={styles.sheetHandle} />
+        <div className={styles.sheetHeader}>
+          <h2 className={styles.sheetTitle}>{t('settings.business.defaultLocation')}</h2>
+          <p className={styles.sheetSubtitle}>{t('settings.business.defaultLocationDesc')}</p>
+        </div>
+        <div className={styles.sheetList}>
+          <button
+            type="button"
+            className={`${styles.locOption} ${value === '' ? styles.locOptionOn : ''}`}
+            onClick={() => { onChange(''); onClose() }}
+          >
+            <span className={`${styles.locOptionBadge} ${value === '' ? styles.locOptionBadgeOn : ''}`}>
+              <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
+            </span>
+            <span className={`${styles.locOptionLabel} ${value === '' ? styles.locOptionLabelOn : ''}`}>
+              {t('settings.business.noDefault')}
+            </span>
+            {value === '' && (
+              <FontAwesomeIcon icon={faCheck} className={styles.locOptionCheck} aria-hidden="true" />
+            )}
+          </button>
+          {locations.map((loc) => (
+            <button
+              key={loc.location_id}
+              type="button"
+              className={`${styles.locOption} ${value === loc.location_id ? styles.locOptionOn : ''}`}
+              onClick={() => { onChange(loc.location_id); onClose() }}
+            >
+              <span className={`${styles.locOptionBadge} ${value === loc.location_id ? styles.locOptionBadgeOn : ''}`}>
+                <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+              </span>
+              <span className={`${styles.locOptionLabel} ${value === loc.location_id ? styles.locOptionLabelOn : ''}`}>
+                {loc.location_name}
+              </span>
+              {value === loc.location_id && (
+                <FontAwesomeIcon icon={faCheck} className={styles.locOptionCheck} aria-hidden="true" />
+              )}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className={styles.rowControl}>{children}</div>
-    </div>
+    </>
   )
 }
+
+// ── main ──────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
   const { t, i18n } = useTranslation()
   const { user, updateUser } = useAuth()
   const navigate = useNavigate()
+  const { locations } = useLocations()
   const [lang, setLang] = useState(i18n.language)
 
   const isOwner = user?.role === 'org_owner'
   const canManageLocations = user?.role === 'org_owner' || user?.role === 'manager'
 
-  // ── Org name editing (org_owner only) ─────────────────────────────────────
+  // ── Org name editing ──────────────────────────────────────────────────────
   const [orgName, setOrgName] = useState(user?.orgName ?? '')
   const [orgNameEditing, setOrgNameEditing] = useState(false)
   const [orgNameSaving, setOrgNameSaving] = useState(false)
   const [orgNameError, setOrgNameError] = useState('')
   const orgNameDirty = orgName.trim() !== (user?.orgName ?? '').trim()
 
-  useEffect(() => {
-    setOrgName(user?.orgName ?? '')
-  }, [user?.orgName])
+  useEffect(() => { setOrgName(user?.orgName ?? '') }, [user?.orgName])
 
   async function handleOrgNameSave() {
     const trimmed = orgName.trim()
@@ -64,11 +157,7 @@ export default function Settings() {
     setOrgNameSaving(true)
     setOrgNameError('')
     try {
-      await apiUpdateOrgName({
-        email: user.email,
-        orgId: user.orgId,
-        orgName: trimmed,
-      })
+      await apiUpdateOrgName({ email: user.email, orgId: user.orgId, orgName: trimmed })
       updateUser({ orgName: trimmed })
       setOrgNameEditing(false)
     } catch {
@@ -78,45 +167,34 @@ export default function Settings() {
     }
   }
 
-  function handleOrgNameEditStart() {
-    setOrgName(user?.orgName ?? '')
-    setOrgNameError('')
-    setOrgNameEditing(true)
-  }
-
   function handleOrgNameCancel() {
     setOrgName(user?.orgName ?? '')
     setOrgNameError('')
     setOrgNameEditing(false)
   }
 
-  function handleLangChange(e) {
-    const next = e.target.value
-    i18n.changeLanguage(next)
-    localStorage.setItem('cleaninv_language', next)
-    setLang(next)
-  }
+  // ── Default location ──────────────────────────────────────────────────────
+  const defaultLocKey = user?.email ? `cleaninv_default_location_${user.email}` : null
 
-  // Per-user localStorage key for the default location preference.
-  // Scoped to the logged-in email so multiple users on the same device
-  // keep independent preferences.
-  const defaultLocKey = user?.email
-    ? `cleaninv_default_location_${user.email}`
-    : null
+  const [defaultLocation, setDefaultLocation] = useState(
+    () => (defaultLocKey ? (localStorage.getItem(defaultLocKey) ?? '') : '')
+  )
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false)
 
-  const [thresholdSaving, setThresholdSaving] = useState(false)
-  const [thresholdError, setThresholdError]   = useState('')
+  useEffect(() => {
+    if (!defaultLocKey) return
+    if (defaultLocation) localStorage.setItem(defaultLocKey, defaultLocation)
+    else localStorage.removeItem(defaultLocKey)
+  }, [defaultLocation, defaultLocKey])
 
+  const defaultLocationName =
+    locations.find((l) => l.location_id === defaultLocation)?.location_name ?? ''
+
+  // ── Prefs (toggles) ───────────────────────────────────────────────────────
   const [prefs, setPrefs] = useState(() => ({
     lowStockAlerts: true,
     outOfStockAlerts: true,
-    pushNotifications: false,
     darkMode: localStorage.getItem('darkMode') === 'true',
-    compactView: false,
-    defaultLocation: defaultLocKey
-      ? (localStorage.getItem(defaultLocKey) ?? '')
-      : '',
-    lowStockThreshold: String(user?.low_stock_threshold ?? user?.lowStockThreshold ?? '20'),
   }))
 
   useEffect(() => {
@@ -124,34 +202,34 @@ export default function Settings() {
     localStorage.setItem('darkMode', prefs.darkMode)
   }, [prefs.darkMode])
 
-  // Persist the default location preference whenever the user changes it.
-  useEffect(() => {
-    if (!defaultLocKey) return
-    if (prefs.defaultLocation) {
-      localStorage.setItem(defaultLocKey, prefs.defaultLocation)
-    } else {
-      localStorage.removeItem(defaultLocKey)
-    }
-  }, [prefs.defaultLocation, defaultLocKey])
-
   function set(key) {
     return (val) => setPrefs((p) => ({ ...p, [key]: val }))
   }
 
+  // ── Language ──────────────────────────────────────────────────────────────
+  function handleLangChange(e) {
+    const next = e.target.value
+    i18n.changeLanguage(next)
+    localStorage.setItem('cleaninv_language', next)
+    setLang(next)
+  }
+
+  // ── Threshold ─────────────────────────────────────────────────────────────
+  const [thresholdSaving, setThresholdSaving] = useState(false)
+  const [thresholdError, setThresholdError] = useState('')
+  const [threshold, setThreshold] = useState(
+    String(user?.low_stock_threshold ?? user?.lowStockThreshold ?? '20')
+  )
   const savedThreshold = String(user?.low_stock_threshold ?? user?.lowStockThreshold ?? '20')
-  const thresholdDirty = String(prefs.lowStockThreshold) !== savedThreshold
+  const thresholdDirty = threshold !== savedThreshold
 
   async function handleThresholdSave() {
     if (!thresholdDirty) return
     setThresholdSaving(true)
     setThresholdError('')
     try {
-      await apiUpdateThreshold({
-        email: user.email,
-        orgId: user.orgId,
-        threshold: prefs.lowStockThreshold,
-      })
-      updateUser({ low_stock_threshold: prefs.lowStockThreshold })
+      await apiUpdateThreshold({ email: user.email, orgId: user.orgId, threshold })
+      updateUser({ low_stock_threshold: threshold })
     } catch {
       setThresholdError(t('settings.alerts.thresholdError'))
     } finally {
@@ -159,108 +237,242 @@ export default function Settings() {
     }
   }
 
+  // ── Role label ────────────────────────────────────────────────────────────
+  const roleLabel = user?.role ? t(`settings.role.${user.role}`, user.role) : ''
+
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('settings.title')}</h1>
-        <p className={styles.subtitle}>{t('settings.subtitle')}</p>
+
+      {/* Profile header */}
+      <div className={styles.profileCard}>
+        <div className={styles.profileRow}>
+          <div className={styles.avatar}>{getInitials(user?.email)}</div>
+          <div className={styles.profileInfo}>
+            <div className={styles.profileName}>{getDisplayName(user?.email)}</div>
+            <div className={styles.profileEmail}>{user?.email}</div>
+          </div>
+          <div className={styles.profileMeta}>
+            {roleLabel && <span className={styles.roleBadge}>{roleLabel}</span>}
+            {user?.orgName && <span className={styles.profileOrgName}>{user.orgName}</span>}
+          </div>
+        </div>
       </div>
 
-      <div className={styles.sections}>
+      <div className={styles.body}>
 
         {/* Business */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.business')}</h2>
+        <div className={styles.section}>
+          <span className={styles.sectionLabel}>{t('settings.sections.business')}</span>
           <div className={styles.card}>
-            <div className={`${styles.row} ${orgNameEditing ? styles.businessNameRowEditing : ''}`}>
-              <div className={styles.rowText}>
-                <label className={`${styles.rowLabel} ${styles.businessNameLabel}`} htmlFor="bizName">
-                  {t('settings.business.businessName')}
-                </label>
-                {orgNameError ? (
-                  <span className={styles.rowError}>{orgNameError}</span>
-                ) : null}
-              </div>
-              {isOwner ? (
-                <div className={styles.orgNameControl}>
-                  {orgNameEditing ? (
-                    <div className={styles.orgNameEditForm}>
-                      <input
-                        id="bizName"
-                        className={`${styles.textInput} ${styles.orgNameInput}`}
-                        value={orgName}
-                        autoFocus
-                        onChange={(e) => { setOrgName(e.target.value); setOrgNameError('') }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleOrgNameSave()
-                          if (e.key === 'Escape') handleOrgNameCancel()
-                        }}
-                      />
-                      <div className={styles.inlineActions}>
-                        <button
-                          type="button"
-                          className={styles.cancelInlineBtn}
-                          onClick={handleOrgNameCancel}
-                          disabled={orgNameSaving}
-                        >
-                          {t('settings.business.orgNameCancel')}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.saveInlineBtn}
-                          onClick={handleOrgNameSave}
-                          disabled={orgNameSaving || !orgName.trim() || !orgNameDirty}
-                        >
-                          {orgNameSaving ? t('settings.business.orgNameSaving') : t('settings.business.orgNameSave')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+
+            {/* Business Name — org_owner only */}
+            {isOwner && (
+              <div className={styles.businessRow}>
+                <div className={styles.businessRowTop}>
+                  <IconBadge icon={faBuilding} bg="var(--green-50)" fg="var(--green-600)" />
+                  <div className={styles.rowText}>
+                    <span className={styles.rowLabel}>{t('settings.business.businessName')}</span>
+                    {!orgNameEditing && (
+                      <span className={styles.rowDesc}>{user?.orgName ?? '—'}</span>
+                    )}
+                  </div>
+                  {!orgNameEditing && (
                     <button
                       type="button"
-                      className={styles.inlineEditTrigger}
-                      onClick={handleOrgNameEditStart}
+                      className={styles.pencilBtn}
+                      onClick={() => {
+                        setOrgName(user?.orgName ?? '')
+                        setOrgNameError('')
+                        setOrgNameEditing(true)
+                      }}
                       aria-label={t('settings.business.orgNameEdit')}
-                      title={t('settings.business.orgNameEdit')}
                     >
-                      <span className={styles.readOnlyValue}>{user?.orgName ?? '—'}</span>
-                      <span className={styles.editInlineBtn} aria-hidden="true">
-                        <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
-                      </span>
+                      <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
                     </button>
                   )}
                 </div>
-              ) : (
-                <span className={styles.readOnlyValue}>{user?.orgName ?? '—'}</span>
-              )}
-            </div>
-            <div className={styles.divider} />
-            <div className={styles.row}>
+                {orgNameEditing && (
+                  <div className={styles.businessEditForm}>
+                    <input
+                      className={styles.editInput}
+                      value={orgName}
+                      autoFocus
+                      onChange={(e) => { setOrgName(e.target.value); setOrgNameError('') }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleOrgNameSave()
+                        if (e.key === 'Escape') handleOrgNameCancel()
+                      }}
+                    />
+                    {orgNameError && <span className={styles.rowError}>{orgNameError}</span>}
+                    <div className={styles.editActions}>
+                      <button
+                        type="button"
+                        className={styles.cancelBtn}
+                        onClick={handleOrgNameCancel}
+                        disabled={orgNameSaving}
+                      >
+                        {t('settings.business.orgNameCancel')}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.saveBtn}
+                        onClick={handleOrgNameSave}
+                        disabled={orgNameSaving || !orgName.trim() || !orgNameDirty}
+                      >
+                        {orgNameSaving
+                          ? <><Spinner />{t('settings.business.orgNameSaving')}</>
+                          : t('settings.business.orgNameSave')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isOwner && <Divider />}
+
+            {/* Default Location */}
+            <button
+              type="button"
+              className={styles.navRow}
+              onClick={() => setLocationSheetOpen(true)}
+            >
+              <IconBadge icon={faLocationDot} bg="var(--emerald-50)" fg="var(--emerald-500)" />
               <div className={styles.rowText}>
-                <label className={styles.rowLabel} htmlFor="defaultLoc">{t('settings.business.defaultLocation')}</label>
+                <span className={styles.rowLabel}>{t('settings.business.defaultLocation')}</span>
                 <span className={styles.rowDesc}>{t('settings.business.defaultLocationDesc')}</span>
               </div>
-              <LocationSelect
-                id="defaultLoc"
-                value={prefs.defaultLocation}
-                onChange={(e) => set('defaultLocation')(e.target.value)}
-                className={styles.selectInput}
-              />
+              <div className={styles.navRight}>
+                <span className={styles.navValue}>
+                  {defaultLocationName || t('settings.business.noDefault')}
+                </span>
+                <FontAwesomeIcon icon={faChevronRight} className={styles.navChevron} aria-hidden="true" />
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+        {/* Organization — owners & managers only */}
+        {canManageLocations && (
+          <div className={styles.section}>
+            <span className={styles.sectionLabel}>{t('settings.sections.organization')}</span>
+            <div className={styles.card}>
+              <button
+                type="button"
+                className={styles.navRow}
+                onClick={() => navigate('/locations', { state: { fromSettings: true } })}
+              >
+                <IconBadge icon={faLocationDot} bg="var(--green-50)" fg="var(--green-600)" />
+                <div className={styles.rowText}>
+                  <span className={styles.rowLabel}>{t('settings.organization.manageLocations')}</span>
+                  <span className={styles.rowDesc}>{t('settings.organization.manageLocationsDesc')}</span>
+                </div>
+                <div className={styles.navRight}>
+                  <span className={styles.navValue}>
+                    {t('settings.organization.locCount', { count: locations.length })}
+                  </span>
+                  <FontAwesomeIcon icon={faChevronRight} className={styles.navChevron} aria-hidden="true" />
+                </div>
+              </button>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* Language */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.language')}</h2>
+        {/* Alerts */}
+        <div className={styles.section}>
+          <span className={styles.sectionLabel}>{t('settings.sections.alerts')}</span>
+          <div className={styles.card}>
+
+            <div className={styles.row}>
+              <IconBadge icon={faBell} bg="var(--amber-100)" fg="var(--amber-600)" />
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>{t('settings.alerts.lowStock')}</span>
+                <span className={styles.rowDesc}>{t('settings.alerts.lowStockDesc')}</span>
+              </div>
+              <Toggle checked={prefs.lowStockAlerts} onChange={set('lowStockAlerts')} />
+            </div>
+
+            <Divider />
+
+            <div className={styles.row}>
+              <IconBadge icon={faBell} bg="var(--red-50)" fg="var(--red-600)" />
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>{t('settings.alerts.outOfStock')}</span>
+                <span className={styles.rowDesc}>{t('settings.alerts.outOfStockDesc')}</span>
+              </div>
+              <Toggle checked={prefs.outOfStockAlerts} onChange={set('outOfStockAlerts')} />
+            </div>
+
+            {isOwner && (
+              <>
+                <Divider />
+                <div className={styles.row}>
+                  <IconBadge icon={faSliders} bg="var(--amber-50)" fg="var(--amber-500)" />
+                  <div className={styles.rowText}>
+                    <span className={styles.rowLabel}>{t('settings.alerts.threshold')}</span>
+                    <span className={styles.rowDesc}>{t('settings.alerts.thresholdDesc')}</span>
+                    {thresholdError && <span className={styles.rowError}>{thresholdError}</span>}
+                  </div>
+                  <div className={styles.numericInput}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className={styles.numberField}
+                      value={threshold}
+                      onChange={(e) => { setThreshold(e.target.value); setThresholdError('') }}
+                    />
+                    <span className={styles.numberSuffix}>%</span>
+                  </div>
+                </div>
+                {thresholdDirty && (
+                  <div className={styles.thresholdSaveWrap}>
+                    <button
+                      type="button"
+                      className={styles.saveBtn}
+                      onClick={handleThresholdSave}
+                      disabled={thresholdSaving}
+                    >
+                      {thresholdSaving
+                        ? <><Spinner />{t('settings.business.orgNameSaving')}</>
+                        : t('settings.business.orgNameSave')}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+          </div>
+        </div>
+
+        {/* Display */}
+        <div className={styles.section}>
+          <span className={styles.sectionLabel}>{t('settings.sections.display')}</span>
           <div className={styles.card}>
             <div className={styles.row}>
+              <IconBadge icon={faMoon} bg="var(--gray-800)" fg="var(--color-page)" />
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>{t('settings.display.darkMode')}</span>
+                <span className={styles.rowDesc}>{t('settings.display.darkModeDesc')}</span>
+              </div>
+              <Toggle checked={prefs.darkMode} onChange={set('darkMode')} />
+            </div>
+          </div>
+        </div>
+
+        {/* Language */}
+        <div className={styles.section}>
+          <span className={styles.sectionLabel}>{t('settings.sections.language')}</span>
+          <div className={styles.card}>
+            <div className={styles.row}>
+              <IconBadge icon={faGlobe} bg="var(--violet-50)" fg="var(--violet-600)" />
               <div className={styles.rowText}>
                 <span className={styles.rowLabel}>{t('settings.language.label')}</span>
                 <span className={styles.rowDesc}>{t('settings.language.desc')}</span>
               </div>
               <select
-                className={styles.selectInput}
+                className={styles.langSelect}
                 value={lang}
                 onChange={handleLangChange}
               >
@@ -269,140 +481,20 @@ export default function Settings() {
               </select>
             </div>
           </div>
-        </section>
-
-        {/* Alerts */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.alerts')}</h2>
-          <div className={styles.card}>
-            <SettingsRow
-              label={t('settings.alerts.lowStock')}
-              description={t('settings.alerts.lowStockDesc')}
-            >
-              <Toggle checked={prefs.lowStockAlerts} onChange={set('lowStockAlerts')} />
-            </SettingsRow>
-            <div className={styles.divider} />
-            <SettingsRow
-              label={t('settings.alerts.outOfStock')}
-              description={t('settings.alerts.outOfStockDesc')}
-            >
-              <Toggle checked={prefs.outOfStockAlerts} onChange={set('outOfStockAlerts')} />
-            </SettingsRow>
-            <div className={styles.divider} />
-            {/* <SettingsRow
-              label="Push Notifications"
-              description="Receive alerts even when app is closed"
-            >
-              <Toggle checked={prefs.pushNotifications} onChange={set('pushNotifications')} />
-            </SettingsRow> */}
-            {isOwner && (
-              <>
-                <div className={styles.divider} />
-                <div className={styles.thresholdBlock}>
-                  <div className={styles.row}>
-                    <div className={styles.rowText}>
-                      <label className={styles.rowLabel} htmlFor="threshold">{t('settings.alerts.threshold')}</label>
-                      <span className={styles.rowDesc}>{t('settings.alerts.thresholdDesc')}</span>
-                      {thresholdError && <span className={styles.rowError}>{thresholdError}</span>}
-                    </div>
-                    <div className={styles.numericInput}>
-                      <input
-                        id="threshold"
-                        type="number"
-                        min="0"
-                        max="100"
-                        className={styles.numberField}
-                        value={prefs.lowStockThreshold}
-                        onChange={(e) => { set('lowStockThreshold')(e.target.value); setThresholdError('') }}
-                      />
-                      <span className={styles.numberSuffix}>%</span>
-                    </div>
-                  </div>
-                  {thresholdDirty && (
-                    <button
-                      type="button"
-                      className={styles.thresholdSaveBtn}
-                      onClick={handleThresholdSave}
-                      disabled={thresholdSaving}
-                    >
-                      {thresholdSaving ? t('settings.business.orgNameSaving') : t('settings.business.orgNameSave')}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* Display */}
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.display')}</h2>
-          <div className={styles.card}>
-            <SettingsRow label={t('settings.display.darkMode')} description={t('settings.display.darkModeDesc')}>
-              <Toggle checked={prefs.darkMode} onChange={set('darkMode')} />
-            </SettingsRow>
-            {/* <div className={styles.divider} />
-            <SettingsRow label={t('settings.display.compactView')} description={t('settings.display.compactViewDesc')}>
-              <Toggle checked={prefs.compactView} onChange={set('compactView')} />
-            </SettingsRow> */}
-          </div>
-        </section>
-
-        
-
-        {/* Organization — org_owner and manager only */}
-        {canManageLocations && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t('settings.sections.organization')}</h2>
-            <div className={styles.card}>
-              <button
-                className={styles.actionRow}
-                type="button"
-                onClick={() => navigate('/locations', { state: { fromSettings: true } })}
-              >
-                <div className={styles.rowText}>
-                  <span className={styles.rowLabel}>{t('settings.organization.manageLocations')}</span>
-                  <span className={styles.rowDesc}>{t('settings.organization.manageLocationsDesc')}</span>
-                </div>
-                <FontAwesomeIcon icon={faChevronRight} aria-hidden="true" />
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* Data */}
-        {/* <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('settings.sections.data')}</h2>
-          <div className={styles.card}>
-            <button className={styles.actionRow} type="button">
-              <span>{t('settings.data.exportCsv')}</span>
-              <FontAwesomeIcon icon={faDownload} aria-hidden="true" />
-            </button>
-            <div className={styles.divider} />
-            <button className={styles.actionRow} type="button">
-              <span>Import from CSV</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-            </button>
-            <div className={styles.divider} />
-            <button className={`${styles.actionRow} ${styles.actionDanger}`} type="button">
-              <span>{t('settings.data.clearAll')}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-              </svg>
-            </button>
-          </div>
-        </section> */}
+        </div>
 
         <p className={styles.version}>CleanInv v0.2.0 · No backend connected</p>
+
       </div>
+
+      <DefaultLocationSheet
+        open={locationSheetOpen}
+        onClose={() => setLocationSheetOpen(false)}
+        locations={locations}
+        value={defaultLocation}
+        onChange={setDefaultLocation}
+      />
+
     </div>
   )
 }
