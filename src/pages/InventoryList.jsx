@@ -68,9 +68,7 @@ function getCategoryTone(category) {
   return 'neutral'
 }
 
-// Shown next to the item name. Zero quantity → "Out" (red). At-or-below
-// threshold → "Low stock" (red). Above threshold → nothing shown.
-function LowStockBadge({ quantity, threshold }) {
+function StatusBadge({ quantity, threshold }) {
   const { t } = useTranslation()
   const qty = Number(quantity)
   if (qty === 0) {
@@ -79,7 +77,7 @@ function LowStockBadge({ quantity, threshold }) {
   if (qty <= threshold) {
     return <span className={`${styles.badge} ${styles.badgeLow}`}>{t('inventory.badgeLow')}</span>
   }
-  return null
+  return <span className={`${styles.badge} ${styles.badgeOk}`}>{t('inventory.badgeOk')}</span>
 }
 
 // ── Refresh icon ──────────────────────────────────────────────────────────────
@@ -614,7 +612,6 @@ export default function InventoryList() {
           <div className={styles.tableHeader} aria-hidden="true">
             <span>{t('item_name')}</span>
             <span className={styles.tableHeaderQty}>{t('quantity')}</span>
-            <span className={styles.tableHeaderCategory}>{t('category')}</span>
             <span className={styles.tableHeaderActions}>{t('inventory.actions')}</span>
           </div>
         )}
@@ -623,55 +620,44 @@ export default function InventoryList() {
         {filtered.map((item) => {
           const qty = Number(item.quantity ?? 0)
           const itemThreshold = item.lowStockThreshold || threshold
-          const isLow = qty === 0 || qty <= itemThreshold
+          const isOut = qty === 0
+          const isLow = !isOut && qty <= itemThreshold
           const tone = getCategoryTone(item.category)
-          const categoryToneClass = {
-            chemicals: styles.categoryChemicals,
-            safety: styles.categorySafety,
-            equipment: styles.categoryEquipment,
-            neutral: styles.categoryNeutral,
+          const dotColor = {
+            chemicals: 'var(--accent)',
+            safety:    'var(--status-low)',
+            equipment: '#818cf8',
+            neutral:   'var(--text-secondary)',
           }[tone]
-          const qtyToneClass = isLow
-            ? styles.qtyLow
-            : {
-                chemicals: styles.qtyChemicals,
-                safety: styles.qtySafety,
-                equipment: styles.qtyEquipment,
-                neutral: styles.qtyNeutral,
-              }[tone]
+          const qtyClass = isOut ? styles.qtyOut : isLow ? styles.qtyLow : styles.qtyOk
 
           return (
             <div
               key={item.itemId}
-              className={`${styles.item} ${isLow ? styles.itemLow : ''}`}
+              className={`${styles.item} ${isOut ? styles.itemOut : isLow ? styles.itemLow : ''}`}
             >
+              <div className={`${styles.itemStripe} ${isOut ? styles.itemStripeOut : isLow ? styles.itemStripeLow : ''}`} />
+
               <div className={styles.itemMain}>
                 <div className={styles.itemNameRow}>
                   <span className={styles.itemName}>{item.itemName}</span>
-                  <LowStockBadge quantity={qty} threshold={itemThreshold} />
+                  <StatusBadge quantity={qty} threshold={itemThreshold} />
                 </div>
-
-                <div className={styles.itemDetailsRow}>
+                <div className={styles.itemMetaRow}>
+                  <span className={styles.categoryDot} style={{ background: dotColor }} />
+                  <span className={styles.categoryText}>{item.category || '—'}</span>
                   {item.location_id && getLocationName(item.location_id, item.location_name) && (
-                    <span className={styles.locationText}>{getLocationName(item.location_id, item.location_name)}</span>
-                  )}
-                  {item.barcode && (
-                    <span className={styles.barcodeText}>{item.barcode}</span>
+                    <>
+                      <span className={styles.metaSep}>·</span>
+                      <span className={styles.locationText}>{getLocationName(item.location_id, item.location_name)}</span>
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className={styles.qtyCell}>
-                <div className={`${styles.qtyStack} ${qtyToneClass}`}>
-                  <span className={styles.qtyValue}>{qty}</span>
-                  {item.unit && <span className={styles.unit}>{item.unit}</span>}
-                </div>
-              </div>
-
-              <div className={styles.categoryCell}>
-                <span className={`${styles.categoryBadge} ${categoryToneClass}`}>
-                  {item.category || '—'}
-                </span>
+              <div className={`${styles.qtyCell} ${qtyClass}`}>
+                <span className={styles.qtyValue}>{qty}</span>
+                {item.unit && <span className={styles.unit}>{item.unit}</span>}
               </div>
 
               <div className={styles.actionsCell}>
@@ -685,18 +671,17 @@ export default function InventoryList() {
                   <FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />
                   <span className={styles.editLinkText}>{t('edit_item')}</span>
                 </Link>
-                {availableLocations.length > 1 && (
-                  <button
-                    type="button"
-                    className={styles.transferBtn}
-                    onClick={() => openTransfer(item)}
-                    aria-label={`${t('inventory.transfer')}: ${item.itemName}`}
-                    title={t('inventory.transfer')}
-                  >
-                    <FontAwesomeIcon icon={faRightLeft} aria-hidden="true" />
-                    <span className={styles.transferBtnText}>{t('inventory.transfer')}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={styles.transferBtn}
+                  onClick={() => openTransfer(item)}
+                  disabled={availableLocations.length <= 1}
+                  aria-label={`${t('inventory.transfer')}: ${item.itemName}`}
+                  title={t('inventory.transfer')}
+                >
+                  <FontAwesomeIcon icon={faRightLeft} aria-hidden="true" />
+                  <span className={styles.transferBtnText}>{t('inventory.transfer')}</span>
+                </button>
               </div>
             </div>
           )

@@ -225,7 +225,7 @@
 
 .skuInput:focus {
   border-color: var(--green-500);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .skuInput::placeholder {
@@ -595,7 +595,7 @@
 .select:focus,
 .textarea:focus {
   border-color: var(--green-500);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .input::placeholder,

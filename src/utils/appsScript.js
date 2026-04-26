@@ -24,7 +24,7 @@
  *   updateOrgName         { email, orgId, orgName }
  *   getOrgMembers         { email, orgId }
  *   removeMember          { email, targetEmail, orgId }
- *   generateInvite        { email, orgId }
+ *   generateInvite        { email, orgId, role }
  *   revokeInvite          { email, token }
  *
  * Locations
@@ -86,7 +86,9 @@ export async function callAppsScript(action, params = {}) {
 
   const pairs = [`action=${encodeURIComponent(action)}`]
   for (const [key, value] of Object.entries(params)) {
-    pairs.push(`${key}=${encodeURIComponent(value)}`)
+    if (value !== undefined && value !== null) {
+      pairs.push(`${key}=${encodeURIComponent(value)}`)
+    }
   }
   const url = `${base}?${pairs.join('&')}`
 

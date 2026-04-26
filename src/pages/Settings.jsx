@@ -401,7 +401,7 @@ export default function Settings() {
           </div>
         </section> */}
 
-        <p className={styles.version}>CleanInv v0.1.0 · No backend connected</p>
+        <p className={styles.version}>CleanInv v0.2.0 · No backend connected</p>
       </div>
     </div>
   )

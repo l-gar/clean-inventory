@@ -7,7 +7,7 @@
   max-width: 480px;
   display: flex;
   background: var(--color-surface);
-  border-top: 1px solid var(--gray-200);
+  border-top: 1px solid var(--color-border);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
   z-index: 10;
   /* Respect iPhone home indicator / notch */
@@ -34,7 +34,7 @@
 }
 
 .navItemActive {
-  color: var(--green-600);
+  color: var(--accent);
 }
 
 .navIcon {

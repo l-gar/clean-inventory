@@ -3,16 +3,17 @@
 }
 
 :root {
-  --green-50: #f0fdf4;
-  --green-100: #dcfce7;
-  --green-200: #bbf7d0;
-  --green-300: #86efac;
-  --green-400: #4ade80;
-  --green-500: #22c55e;
-  --green-600: #16a34a;
-  --green-700: #15803d;
-  --green-800: #166534;
-  --green-900: #14532d;
+  /* ── Palette (Slate/Blue — replaces green) ── */
+  --green-50:  #eff6ff;
+  --green-100: #dbeafe;
+  --green-200: #bfdbfe;
+  --green-300: #93c5fd;
+  --green-400: #60a5fa;
+  --green-500: #3b82f6;
+  --green-600: #3b82f6;
+  --green-700: #2563eb;
+  --green-800: #1e40af;
+  --green-900: #1e3a8a;
 
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
@@ -29,22 +30,41 @@
   --amber-500: #f59e0b;
   --amber-600: #d97706;
 
-  --red-50: #fef2f2;
+  --red-50:  #fef2f2;
+  --red-100: #fee2e2;
   --red-500: #ef4444;
   --red-600: #dc2626;
+  --red-700: #b91c1c;
 
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* ── Semantic tokens (Slate theme) ── */
+  --color-page:        #f8fafc;
+  --color-surface:     #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-border:      #e2e8f0;
 
-  /* Semantic color tokens — override these in html.dark */
-  --color-page:    var(--green-50);
-  --color-surface: #ffffff;
-  --color-border:  var(--gray-200);
+  --accent:            #3b82f6;
+  --accent-hover:      #2563eb;
+  --accent-bg:         #dbeafe;
+  --accent-text:       #1e40af;
+
+  --text-primary:      #0f172a;
+  --text-secondary:    #64748b;
+  --nav-bg:            #ffffff;
+
+  --status-low:        #d97706;
+  --status-low-bg:     #fef9ec;
+  --status-out:        #dc2626;
+  --status-out-bg:     #fef2f2;
+
+  --input-bg:          #f8fafc;
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
-  color: var(--gray-800);
-  background-color: var(--green-50);
+  color: var(--text-primary);
+  background-color: var(--color-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -52,28 +72,48 @@
 /* ── Dark mode ────────────────────────────────────────────── */
 html.dark {
   color-scheme: dark;
-  background-color: #0d1f13;
-  color: #d1fae5;
+  background-color: #0f172a;
+  color: #f1f5f9;
 
-  --color-page:    #0d1f13;
-  --color-surface: #162b1c;
-  --color-border:  #2d4a38;
+  --color-page:        #0f172a;
+  --color-surface:     #1e293b;
+  --color-surface-alt: #162032;
+  --color-border:      #334155;
 
-  /* Green palette */
-  --green-50:  #0d1f13;
-  --green-100: #1a3423;
-  --green-800: #4ade80;
+  --accent:            #60a5fa;
+  --accent-hover:      #93c5fd;
+  --accent-bg:         #1e3a5f;
+  --accent-text:       #bfdbfe;
 
-  /* Gray palette — text and surface roles only, never backgrounds that must stay dark */
-  --gray-50:  #111e16;
-  --gray-100: #1a2e20;
-  --gray-200: #2d4a38;
-  --gray-300: #4b6055;
-  --gray-400: #6b8a77;
-  --gray-500: #8aaa96;
-  --gray-800: #d1fae5;
+  --text-primary:      #f1f5f9;
+  --text-secondary:    #94a3b8;
+  --nav-bg:            #0f172a;
 
-  /* Status palette — tinted dark surfaces */
+  --status-low:        #fbbf24;
+  --status-low-bg:     #2c1f08;
+  --status-out:        #f87171;
+  --status-out-bg:     #2c1010;
+
+  --input-bg:          #0f172a;
+
+  /* Blue palette — dark mode equivalents */
+  --green-50:  #0d1828;
+  --green-100: #1e3a5f;
+  --green-800: #60a5fa;
+
+  /* Gray palette — neutral slate, no green tint */
+  --gray-50:  #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #64748b;
+  --gray-500: #94a3b8;
+  --gray-600: #cbd5e1;
+  --gray-700: #e2e8f0;
+  --gray-800: #f1f5f9;
+  --gray-900: #f8fafc;
+
+  /* Status palette */
   --red-50:   #2c1515;
   --amber-50: #2c2010;
 }
@@ -81,7 +121,7 @@ html.dark {
 html.dark h1,
 html.dark h2,
 html.dark h3 {
-  color: #d1fae5;
+  color: var(--text-primary);
 }
 
 html {

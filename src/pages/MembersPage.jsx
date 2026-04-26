@@ -9,6 +9,8 @@ import {
   faTrashCan,
   faLocationDot,
   faSpinner,
+  faCheck,
+  faPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
@@ -23,6 +25,7 @@ import InlineLoader from '../components/InlineLoader'
 import ErrorState from '../components/ErrorState'
 import EmptyState from '../components/EmptyState'
 import ConfirmBlock from '../components/ConfirmBlock'
+import { formatDate } from '../utils/date'
 import styles from './MembersPage.module.css'
 
 const ROLE_KEYS = {
@@ -55,8 +58,7 @@ export default function MembersPage() {
 
   // Location sheet
   const [locationTarget, setLocationTarget] = useState(null)
-  const [selectedLocId, setSelectedLocId]   = useState('')
-  const [locationBusy, setLocationBusy]     = useState(false)
+  const [busyLocIds, setBusyLocIds]         = useState(new Set())
   const [locationError, setLocationError]   = useState(null)
 
   // Remove member
@@ -79,12 +81,7 @@ export default function MembersPage() {
   useEffect(() => {
     fetchMembers(user.email, user.orgId).catch(() => {})
     fetchInvites(user.email, user.orgId).catch(() => {})
-    fetchLocations(user.email, user.orgId)
-      .then(locs => {
-        const firstId = locs[0]?.location_id ?? locs[0]?.locationId ?? ''
-        if (firstId) setSelectedLocId(firstId)
-      })
-      .catch(() => {})
+    fetchLocations(user.email, user.orgId).catch(() => {})
   }, [fetchMembers, fetchInvites, fetchLocations, user.email, user.orgId])
 
   // ── Location sheet ──────────────────────────────────────────────────────────
@@ -92,41 +89,31 @@ export default function MembersPage() {
   function openLocationSheet(member) {
     setLocationTarget(member)
     setLocationError(null)
-    const firstId = locations[0]?.location_id ?? locations[0]?.locationId ?? ''
-    if (firstId) setSelectedLocId(firstId)
   }
 
   function closeLocationSheet() {
-    if (locationBusy) return
+    if (busyLocIds.size > 0) return
     setLocationTarget(null)
     setLocationError(null)
   }
 
-  async function handleAssignLocation() {
-    if (!locationTarget || !selectedLocId) return
-    setLocationBusy(true)
+  async function handleToggleLocation(locId, isAssigned) {
+    setBusyLocIds(prev => new Set([...prev, locId]))
     setLocationError(null)
     try {
-      await apiAssignLocation({ email: user.email, targetEmail: locationTarget.email, orgId: user.orgId, locationId: selectedLocId })
-      closeLocationSheet()
+      if (isAssigned) {
+        await apiRemoveLocationAssignment({ email: user.email, targetEmail: locationTarget.email, orgId: user.orgId, locationId: locId })
+      } else {
+        await apiAssignLocation({ email: user.email, targetEmail: locationTarget.email, orgId: user.orgId, locationId: locId })
+      }
+      invalidateMembers()
+      const updated = await fetchMembers(user.email, user.orgId)
+      const fresh = updated.find(m => m.email === locationTarget.email)
+      if (fresh) setLocationTarget(fresh)
     } catch {
       setLocationError(t('members.assign_error'))
     } finally {
-      setLocationBusy(false)
-    }
-  }
-
-  async function handleRemoveLocation() {
-    if (!locationTarget || !selectedLocId) return
-    setLocationBusy(true)
-    setLocationError(null)
-    try {
-      await apiRemoveLocationAssignment({ email: user.email, targetEmail: locationTarget.email, orgId: user.orgId, locationId: selectedLocId })
-      closeLocationSheet()
-    } catch {
-      setLocationError(t('members.assign_error'))
-    } finally {
-      setLocationBusy(false)
+      setBusyLocIds(prev => { const s = new Set(prev); s.delete(locId); return s })
     }
   }
 
@@ -167,17 +154,20 @@ export default function MembersPage() {
   // ── Generate invite ─────────────────────────────────────────────────────────
 
   async function handleGenerateInvite() {
+    const roleToSend = isOwner ? inviteRole : 'org_member'
+    console.log('[generateInvite] sending role:', roleToSend)
     setGenerating(true)
     setGenerateError(null)
     try {
       await apiGenerateInvite({
         email: user.email,
         orgId: user.orgId,
-        role: isOwner ? inviteRole : 'org_member',
+        role: roleToSend,
       })
       invalidateInvites()
       await fetchInvites(user.email, user.orgId)
-    } catch {
+    } catch (e) {
+      console.error('generateInvite failed:', e)
       setGenerateError(t('members.generate_error'))
     } finally {
       setGenerating(false)
@@ -272,7 +262,7 @@ export default function MembersPage() {
                             </span>
                             {member.joinedDate && (
                               <span className={styles.joinedDate}>
-                                {t('members.joined', { date: new Date(member.joinedDate).toLocaleDateString(i18n.language, { year: 'numeric', month: 'short', day: 'numeric' }) })}
+                                {t('members.joined', { date: formatDate(member.joinedDate, i18n.language) })}
                               </span>
                             )}
                           </div>
@@ -318,19 +308,24 @@ export default function MembersPage() {
           <div className={styles.generateSection}>
             <h2 className={styles.sectionLabel}>{t('members.new_invite')}</h2>
             {isOwner && (
-              <div className={styles.roleRow}>
-                <label className={styles.roleLabel} htmlFor="inviteRole">
-                  {t('members.invite_role_label')}
-                </label>
-                <select
-                  id="inviteRole"
-                  className={styles.roleSelect}
-                  value={inviteRole}
-                  onChange={e => setInviteRole(e.target.value)}
-                >
-                  <option value="org_member">{t('members.invite_role_member')}</option>
-                  <option value="manager">{t('members.invite_role_manager')}</option>
-                </select>
+              <div className={styles.roleField}>
+                <span className={styles.roleLabel}>{t('members.invite_role_label')}</span>
+                <div className={styles.roleToggle} role="group" aria-label={t('members.invite_role_label')}>
+                  <button
+                    type="button"
+                    className={`${styles.roleToggleBtn} ${inviteRole === 'org_member' ? styles.roleToggleBtnActive : ''}`}
+                    onClick={() => setInviteRole('org_member')}
+                  >
+                    {t('members.invite_role_member')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.roleToggleBtn} ${inviteRole === 'manager' ? styles.roleToggleBtnActive : ''}`}
+                    onClick={() => setInviteRole('manager')}
+                  >
+                    {t('members.invite_role_manager')}
+                  </button>
+                </div>
               </div>
             )}
             {generateError && <p className={styles.generateError}>{generateError}</p>}
@@ -377,11 +372,16 @@ export default function MembersPage() {
                   ) : (
                     <>
                       <div className={styles.inviteInfo}>
-                        <span className={styles.inviteToken}>{invite.token.slice(0, 10)}…</span>
+                        <div className={styles.inviteTokenRow}>
+                          <span className={styles.inviteToken}>{invite.token.slice(0, 10)}…</span>
+                          <span className={`${styles.roleBadge} ${styles[`role_${invite.role ?? 'org_member'}`] ?? ''}`}>
+                            {t(ROLE_KEYS[invite.role] ?? 'members.role_org_member')}
+                          </span>
+                        </div>
                         <div className={styles.inviteMeta}>
                           {invite.expiresDate && (
                             <span className={styles.inviteExpiry}>
-                              {t('members.expires', { date: invite.expiresDate })}
+                              {t('members.expires', { date: formatDate(invite.expiresDate, i18n.language) })}
                             </span>
                           )}
                           {invite.createdBy && (
@@ -434,48 +434,43 @@ export default function MembersPage() {
           {locationTarget && (
             <p className={styles.sheetSubtitle}>{locationTarget.email}</p>
           )}
-          <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor="assignLoc">
-              {t('members.location_label')}
-            </label>
-            <select
-              id="assignLoc"
-              className={styles.fieldSelect}
-              value={selectedLocId}
-              onChange={e => setSelectedLocId(e.target.value)}
-            >
-              {locations.map(loc => {
-                const id   = loc.location_id ?? loc.locationId ?? ''
-                const name = loc.location_name ?? loc.locationName ?? id
-                return <option key={id} value={id}>{name}</option>
-              })}
-            </select>
-          </div>
+          <ul className={styles.locationList}>
+            {locations.map(loc => {
+              const id       = loc.location_id ?? loc.locationId ?? ''
+              const name     = loc.location_name ?? loc.locationName ?? id
+              const assigned = locationTarget?.locationIds?.includes(id) ?? false
+              const isBusy   = busyLocIds.has(id)
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    className={`${styles.locationToggleRow} ${assigned ? styles.locationToggleRowOn : ''}`}
+                    onClick={() => handleToggleLocation(id, assigned)}
+                    disabled={isBusy}
+                    aria-pressed={assigned}
+                  >
+                    <span className={styles.locationToggleName}>{name}</span>
+                    <span className={styles.locationToggleIcon}>
+                      {isBusy
+                        ? <FontAwesomeIcon icon={faSpinner} spin aria-hidden="true" />
+                        : assigned
+                          ? <FontAwesomeIcon icon={faCheck} aria-hidden="true" />
+                          : <FontAwesomeIcon icon={faPlus} aria-hidden="true" />}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
           {locationError && <p className={styles.fieldError}>{locationError}</p>}
           <div className={styles.sheetButtons}>
             <button
               type="button"
-              className={styles.btnPrimary}
-              onClick={handleAssignLocation}
-              disabled={locationBusy || !selectedLocId}
-            >
-              {locationBusy ? t('saving') : t('members.assign_btn')}
-            </button>
-            <button
-              type="button"
-              className={styles.btnRemove}
-              onClick={handleRemoveLocation}
-              disabled={locationBusy || !selectedLocId}
-            >
-              {t('members.remove_from_location')}
-            </button>
-            <button
-              type="button"
               className={styles.btnSecondary}
               onClick={closeLocationSheet}
-              disabled={locationBusy}
+              disabled={busyLocIds.size > 0}
             >
-              {t('cancel')}
+              {t('done')}
             </button>
           </div>
         </div>

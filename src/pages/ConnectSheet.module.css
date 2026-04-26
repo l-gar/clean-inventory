@@ -67,7 +67,7 @@
 /* ── Auto-create section ────────────────────────────────────────── */
 .autoCreate {
   width: 100%;
-  background: var(--green-50, #f0fdf4);
+  background: var(--green-50, #eff6ff);
   border: 1.5px solid var(--green-200, #bbf7d0);
   border-radius: 12px;
   padding: 20px;
@@ -373,7 +373,7 @@
 }
 
 .btnOutline:hover:not(:disabled) {
-  background: var(--green-50, #f0fdf4);
+  background: var(--green-50, #eff6ff);
 }
 
 .btnOutline:disabled {

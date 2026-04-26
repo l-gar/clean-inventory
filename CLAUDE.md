@@ -41,6 +41,11 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 ## Icons
 - Font Awesome only — no other icon libraries, no emoji as icons
 
+## Dates
+- Never render a raw date string or timestamp — always format with `formatDate(value, i18n.language)` from `src/utils/date.js`
+- `formatDate` handles null/undefined/unparseable values safely; never guard separately before calling it
+- Display format: `{ year: 'numeric', month: 'short', day: 'numeric' }` — matches what members see on the Team tab (e.g. "Apr 25, 2026")
+
 ## Data normalization
 - All field-name coercion (camelCase ↔ snake_case, alias resolution) lives in `src/domain/normalize.js` — never inline it in a page or hook
 - Use `normalizeLocation` for any location object that may arrive as a string or with mixed field names

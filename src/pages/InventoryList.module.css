@@ -1,9 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at top, rgba(34, 197, 94, 0.08), transparent 30%),
-    var(--color-page);
+  background: var(--color-page);
 }
 
 /* ── Page header ────────────────────────────────────────────────────────── */
@@ -13,7 +11,7 @@
   justify-content: space-between;
   padding: 20px 16px 12px;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--color-border);
   gap: 12px;
 }
 
@@ -26,14 +24,14 @@
 
 .title {
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--green-800);
+  font-weight: 800;
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
 .count {
   font-size: 0.85rem;
-  color: var(--gray-400);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -44,18 +42,19 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
   background: transparent;
-  color: var(--gray-400);
+  color: var(--text-secondary);
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
 }
 
-.refreshBtn:hover {
-  background: var(--gray-100);
-  color: var(--gray-600);
+.refreshBtn:hover,
+.refreshBtn:active {
+  background: var(--color-surface-alt);
+  color: var(--text-primary);
 }
 
 .refreshBtn:disabled {
@@ -64,7 +63,7 @@
 }
 
 .refreshBtnActive {
-  color: var(--green-600);
+  color: var(--accent);
 }
 
 .refreshBtn svg {
@@ -83,11 +82,11 @@
 /* ── Sticky filters ─────────────────────────────────────────────────────── */
 .filters {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--gray-200);
-  padding: 12px 16px 12px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   position: sticky;
   top: 0;
   z-index: 5;
@@ -102,62 +101,63 @@
 
 .searchIcon {
   position: absolute;
-  left: 14px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: var(--gray-400);
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
-  min-height: 50px;
-  padding: 13px 16px 13px 46px;
-  border: 1.5px solid rgba(22, 163, 74, 0.12);
-  border-radius: 14px;
-  font-size: 0.95rem;
-  background: linear-gradient(180deg, var(--color-surface), var(--gray-50));
+  height: 38px;
+  padding: 0 16px 0 32px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 13px;
+  background: var(--input-bg);
   outline: none;
-  color: var(--gray-800);
+  color: var(--text-primary);
   box-sizing: border-box;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .searchInput:focus {
-  border-color: var(--green-500);
-  background: var(--color-surface);
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .searchInput::placeholder {
-  color: var(--gray-400);
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .searchInputActive {
-  padding-right: 78px;
+  padding-right: 64px;
 }
 
 .searchClear {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   border: none;
   border-radius: 999px;
-  background: var(--green-100);
-  color: var(--green-700);
+  background: var(--color-surface-alt);
+  color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 7px 10px;
+  padding: 5px 9px;
   line-height: 1;
-  transition: background 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.searchClear:hover {
-  background: var(--green-200);
+.searchClear:hover,
+.searchClear:active {
+  background: var(--color-border);
 }
 
 /* ── Single location label ──────────────────────────────────────────────── */
@@ -165,18 +165,18 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 999px;
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--gray-600);
+  color: var(--text-secondary);
   align-self: flex-start;
 }
 
 .singleLocation svg {
-  color: var(--green-600);
+  color: var(--accent);
   width: 13px;
   height: 13px;
 }
@@ -184,9 +184,9 @@
 /* ── Location filter tabs ───────────────────────────────────────────────── */
 .locationTabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
-  padding-bottom: 12px;
+  padding-bottom: 2px;
   scrollbar-width: none;
 }
 
@@ -196,35 +196,35 @@
 
 .locationTab {
   flex: 0 0 auto;
-  padding: 7px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--gray-200);
-  background: var(--color-surface);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--gray-500);
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .locationTabActive {
-  background: var(--green-600);
-  border-color: var(--green-600);
-  color: white;
-  box-shadow: 0 10px 18px rgba(22, 163, 74, 0.2);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
-/* ── Item list ──────────────────────────────────────────────────────────── */
+/* ── Item list container ────────────────────────────────────────────────── */
 .list {
-  margin: 12px 16px 20px;
+  margin: 12px 12px 20px;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06);
   transition: opacity 0.15s ease;
 }
 
@@ -232,18 +232,18 @@
   opacity: 0.72;
 }
 
+/* ── Column header ──────────────────────────────────────────────────────── */
 .tableHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 110px 140px 92px;
-  gap: 16px;
+  grid-template-columns: 1fr 56px 80px;
   align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--gray-200);
-  background: linear-gradient(180deg, var(--gray-50), var(--color-surface));
-  color: var(--gray-500);
-  font-size: 0.72rem;
+  padding: 8px 14px;
+  background: var(--color-surface-alt);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--text-secondary);
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -251,267 +251,266 @@
   text-align: center;
 }
 
-.tableHeaderCategory,
 .tableHeaderActions {
-  text-align: right;
+  text-align: center;
 }
 
 /* ── Item rows ──────────────────────────────────────────────────────────── */
 .item {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) 110px 140px 92px;
-  gap: 16px;
+  grid-template-columns: 1fr 56px 80px;
+  gap: 8px;
   align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--gray-200);
+  padding: 11px 14px 11px 18px;
+  border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
-  transition: background 0.18s ease;
+  transition: background 0.15s ease;
 }
 
 .item:last-child {
   border-bottom: none;
 }
 
-.item:hover {
-  background: rgba(34, 197, 94, 0.04);
+.itemOut {
+  background: var(--status-out-bg);
 }
 
 .itemLow {
-  background:
-    linear-gradient(90deg, rgba(239, 68, 68, 0.08), transparent 45%),
-    var(--color-surface);
+  background: var(--status-low-bg);
 }
 
-.itemLow::before {
-  content: '';
+/* Left status stripe — absolutely positioned inside .item */
+.itemStripe {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
-  background: var(--red-500, #ef4444);
+  width: 4px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
 }
 
+.itemStripeOut { background: var(--status-out); }
+.itemStripeLow { background: var(--status-low); }
+
+/* ── Item main column ───────────────────────────────────────────────────── */
 .itemMain {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .itemNameRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   min-width: 0;
 }
 
 .itemName {
   font-weight: 700;
-  font-size: 1rem;
-  color: var(--gray-800);
-  letter-spacing: -0.01em;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.3;
 }
 
-.itemDetailsRow {
+.itemMetaRow {
   display: flex;
   align-items: center;
-  gap: 8px 12px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
-.locationText,
-.barcodeText {
-  font-size: 0.84rem;
-  color: var(--gray-500);
+.categoryDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.barcodeText {
-  font-family: monospace;
+.categoryText {
+  font-size: 10px;
+  color: var(--text-secondary);
 }
 
-.editLink {
-  display: inline-flex;
+.metaSep {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.locationText {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* ── Qty cell ───────────────────────────────────────────────────────────── */
+.qtyCell {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--gray-600);
-  text-decoration: none;
-  font-size: 0.74rem;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  gap: 2px;
 }
 
-.editLink:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--green-700);
-  transform: translateY(-1px);
+.qtyValue {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.unit {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.qtyOut { color: var(--status-out); }
+.qtyLow { color: var(--status-low); }
+.qtyOk  { color: var(--accent); }
+
+/* ── Actions cell ───────────────────────────────────────────────────────── */
+.actionsCell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* ── Edit button ────────────────────────────────────────────────────────── */
+.editLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.editLink:hover,
+.editLink:active {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .editLink svg {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
 }
 
 .editLinkText {
   display: inline;
 }
 
-.qtyCell {
+/* ── Transfer button ────────────────────────────────────────────────────── */
+.transferBtn {
   display: flex;
-  justify-content: center;
-}
-
-.qtyStack {
-  display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 70px;
-}
-
-.qtyValue {
-  font-size: 1.45rem;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.unit {
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: inherit;
-  opacity: 0.82;
-}
-
-.qtyChemicals {
-  color: var(--green-600);
-}
-
-.qtySafety {
-  color: var(--amber-600);
-}
-
-.qtyEquipment {
-  color: #2563eb;
-}
-
-.qtyNeutral {
-  color: var(--gray-700);
-}
-
-.qtyLow {
-  color: var(--red-600, #dc2626);
-}
-
-.categoryCell {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.actionsCell {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 4px;
-}
-
-.categoryBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 0.78rem;
-  font-weight: 700;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.categoryChemicals {
-  background: rgba(220, 252, 231, 0.92);
-  border-color: rgba(22, 163, 74, 0.18);
-  color: var(--green-800);
+.transferBtn:hover,
+.transferBtn:active {
+  background: var(--color-surface-alt);
+  color: var(--text-primary);
 }
 
-.categorySafety {
-  background: rgba(254, 243, 199, 0.95);
-  border-color: rgba(245, 158, 11, 0.22);
-  color: #b45309;
+.transferBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.categoryEquipment {
-  background: rgba(219, 234, 254, 0.95);
-  border-color: rgba(59, 130, 246, 0.24);
-  color: #1d4ed8;
+.transferBtn svg {
+  width: 11px;
+  height: 11px;
 }
 
-.categoryNeutral {
-  background: var(--gray-100);
-  border-color: var(--gray-200);
-  color: var(--gray-600);
+.transferBtnText {
+  display: inline;
 }
 
 /* ── Status badges ──────────────────────────────────────────────────────── */
 .badge {
   flex-shrink: 0;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   padding: 2px 7px;
-  border-radius: 10px;
+  border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
   white-space: nowrap;
 }
 
-/* Low stock — red to match task requirement */
-.badgeLow {
-  background: var(--red-100, #fee2e2);
-  color: var(--red-700, #b91c1c);
-}
-
-/* Out of stock — deeper red */
 .badgeOut {
-  background: var(--red-600, #dc2626);
-  color: #fff;
+  background: var(--status-out-bg);
+  color: var(--status-out);
+  border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
-/* ── Dark mode: category badge tones ────────────────────────────────────── */
-:global(html.dark) .categoryChemicals {
-  background: rgba(22, 163, 74, 0.14);
-  border-color: rgba(74, 222, 128, 0.28);
-  color: #4ade80;
+.badgeLow {
+  background: var(--status-low-bg);
+  color: var(--status-low);
+  border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
-:global(html.dark) .categorySafety {
-  background: rgba(217, 119, 6, 0.14);
-  border-color: rgba(251, 191, 36, 0.28);
-  color: #fbbf24;
+.badgeOk {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border: 1px solid transparent;
 }
 
-:global(html.dark) .categoryEquipment {
-  background: rgba(37, 99, 235, 0.14);
-  border-color: rgba(96, 165, 250, 0.28);
-  color: #60a5fa;
+/* ── Dark mode overrides ────────────────────────────────────────────────── */
+:global(html.dark) .editLink {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.3);
 }
 
-/* ── Dark mode: qty tone colors ─────────────────────────────────────────── */
-:global(html.dark) .qtyChemicals  { color: #4ade80; }
-:global(html.dark) .qtySafety     { color: #fbbf24; }
-:global(html.dark) .qtyEquipment  { color: #60a5fa; }
+:global(html.dark) .editLink:hover,
+:global(html.dark) .editLink:active {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.45);
+}
 
+:global(html.dark) .badgeOut {
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+:global(html.dark) .badgeLow {
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .pageHeader {
     padding-bottom: 10px;
@@ -530,48 +529,21 @@
     display: none;
   }
 
-  /* Two-row layout:
-     row 1 → item name (left)  |  qty (right)
-     row 2 → location text     |  category pill (right) */
   .item {
     grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      'main actions qty'
-      'main actions cat';
-    padding: 13px 12px;
-    gap: 4px 10px;
-    align-items: stretch;
-  }
-
-  .itemMain {
-    grid-area: main;
-  }
-
-  .actionsCell {
-    grid-area: actions;
+    grid-template-areas: 'main qty actions';
+    padding: 11px 12px 11px 16px;
+    gap: 4px 8px;
     align-items: center;
-    justify-content: flex-start;
-    padding-top: 2px;
   }
 
-  .qtyCell {
-    grid-area: qty;
-    justify-content: flex-end;
-    align-self: start;
-    padding-top: 2px;
-  }
-
-  .categoryCell {
-    grid-area: cat;
-    justify-content: flex-end;
-    align-items: flex-end;
-    align-self: end;
-    padding-bottom: 2px;
-  }
+  .itemMain    { grid-area: main; }
+  .qtyCell     { grid-area: qty; justify-content: flex-end; align-self: center; }
+  .actionsCell { grid-area: actions; align-items: center; }
 
   .editLink {
     width: 34px;
-    min-height: 34px;
+    height: 34px;
     padding: 0;
     border-radius: 10px;
   }
@@ -580,23 +552,9 @@
     display: none;
   }
 
-  .qtyValue {
-    font-size: 1.2rem;
-  }
-
-  .qtyStack {
-    min-width: unset;
-  }
-
-  .categoryBadge {
-    font-size: 0.73rem;
-    padding: 0 10px;
-    min-height: 26px;
-  }
-
   .transferBtn {
     width: 34px;
-    min-height: 34px;
+    height: 34px;
     padding: 0;
     border-radius: 10px;
   }
@@ -604,41 +562,13 @@
   .transferBtnText {
     display: none;
   }
+
+  .qtyValue {
+    font-size: 18px;
+  }
 }
 
-/* ── Transfer button ────────────────────────────────────────────────────────── */
-.transferBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--gray-600);
-  font-size: 0.74rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
-}
-
-.transferBtn:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
-  color: var(--green-700);
-  transform: translateY(-1px);
-}
-
-.transferBtn svg {
-  width: 12px;
-  height: 12px;
-}
-
-
-/* ── Transfer modal / bottom sheet ──────────────────────────────────────────── */
+/* ── Transfer modal / bottom sheet ─────────────────────────────────────── */
 .modalBackdrop {
   position: fixed;
   inset: 0;
@@ -680,14 +610,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 16px;
-  border-bottom: 1px solid var(--gray-100);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
 .transferTitle {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--gray-800);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -696,8 +626,8 @@
   height: 32px;
   border-radius: 999px;
   border: none;
-  background: var(--gray-100);
-  color: var(--gray-600);
+  background: var(--color-surface-alt);
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -707,7 +637,7 @@
 }
 
 .transferClose:hover {
-  background: var(--gray-200);
+  background: var(--color-border);
 }
 
 .transferClose svg {
@@ -726,7 +656,7 @@
 .transferItemName {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--green-700);
+  color: var(--accent);
   margin: 0;
 }
 
@@ -739,7 +669,7 @@
 .transferLabel {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--gray-600);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -748,26 +678,27 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
-  color: var(--gray-400);
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .transferReadOnly {
   padding: 10px 12px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: var(--gray-500);
-  background: var(--gray-50);
+  color: var(--text-secondary);
+  background: var(--color-surface-alt);
 }
 
 .transferSelect,
 .transferInput {
   width: 100%;
   padding: 10px 12px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
   font-size: 0.95rem;
-  color: var(--gray-800);
+  color: var(--text-primary);
   background: var(--color-surface);
   outline: none;
   box-sizing: border-box;
@@ -776,8 +707,8 @@
 
 .transferSelect:focus,
 .transferInput:focus {
-  border-color: var(--green-500);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .transferLoadingRow {
@@ -790,7 +721,7 @@
 
 .transferError {
   font-size: 0.84rem;
-  color: var(--red-600);
+  color: var(--status-out);
   margin: 0;
 }
 
@@ -798,7 +729,7 @@
   display: flex;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid var(--gray-100);
+  border-top: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
@@ -806,9 +737,9 @@
   flex: 1;
   padding: 12px;
   border-radius: 10px;
-  border: 1.5px solid var(--gray-200);
+  border: 1.5px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--gray-700);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -816,7 +747,7 @@
 }
 
 .transferCancelBtn:hover:not(:disabled) {
-  background: var(--gray-50);
+  background: var(--color-surface-alt);
 }
 
 .transferCancelBtn:disabled {
@@ -829,7 +760,7 @@
   padding: 12px;
   border-radius: 10px;
   border: none;
-  background: var(--green-600);
+  background: var(--accent);
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -838,7 +769,7 @@
 }
 
 .transferSubmitBtn:hover:not(:disabled) {
-  background: var(--green-700);
+  background: var(--accent-hover);
 }
 
 .transferSubmitBtn:disabled {
