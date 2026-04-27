@@ -61,6 +61,7 @@ export default function EditItem() {
   const [form,        setForm]        = useState(() => resolvedItem ? itemToForm(resolvedItem) : null)
   const [adjustMode,  setAdjustMode]  = useState(true)   // default on for scan flow
   const [delta,       setDelta]       = useState('')
+  const [adjustNote,  setAdjustNote]  = useState('')
   const [saving,      setSaving]      = useState(false)
   const [saveError,   setSaveError]   = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -99,10 +100,11 @@ export default function EditItem() {
           await apiDeductItem({ email: user.email, orgId: user.orgId, stockId, quantity: Math.abs(deltaNum) })
         }
       } else {
+        if (!canEditAll) throw new Error(t('edit_item_save_error'))
         await apiAdjustItem({
           email: user.email, orgId: user.orgId, stockId,
           quantity: newTotal,
-          notes: form.description || 'Manual stock adjustment',
+          notes: adjustNote.trim() || 'Edit Item: manual quantity correction',
         })
       }
 
@@ -293,11 +295,14 @@ export default function EditItem() {
           adjustMode={adjustMode}
           delta={delta}
           quantity={form?.quantity}
-          onModeToggle={() => { setAdjustMode((m) => !m); setDelta('') }}
+          onModeToggle={() => { setAdjustMode((m) => !m); setDelta(''); setAdjustNote('') }}
           onDeltaChange={setDelta}
           onQuantityChange={(val) => setForm((prev) => ({ ...prev, quantity: val }))}
           onUnitChange={(val) => setForm((prev) => ({ ...prev, unit: val }))}
           autoFocus
+          showModeToggle={canEditAll}
+          correctionNote={adjustNote}
+          onCorrectionNoteChange={setAdjustNote}
         />
 
         {/* ── Stock settings — owner / manager only ───────────── */}

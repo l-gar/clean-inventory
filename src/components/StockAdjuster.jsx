@@ -16,6 +16,9 @@ export default function StockAdjuster({
   onQuantityChange,
   onUnitChange,
   autoFocus = false,
+  showModeToggle = true,
+  correctionNote = '',
+  onCorrectionNoteChange,
 }) {
   const { t } = useTranslation()
   const deltaNum = Number(delta) || 0
@@ -27,13 +30,15 @@ export default function StockAdjuster({
     <section className={styles.section}>
       <div className={styles.qtyHeader}>
         <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
-        <button
-          type="button"
-          className={`${styles.modeToggle} ${adjustMode ? styles.modeToggleActive : ''}`}
-          onClick={onModeToggle}
-        >
-          {adjustMode ? t('set_exact') : t('adjust_qty')}
-        </button>
+        {showModeToggle && (
+          <button
+            type="button"
+            className={`${styles.modeToggle} ${adjustMode ? styles.modeToggleActive : ''}`}
+            onClick={onModeToggle}
+          >
+            {adjustMode ? t('set_exact') : t('adjust_qty')}
+          </button>
+        )}
       </div>
 
       {adjustMode ? (
@@ -89,35 +94,53 @@ export default function StockAdjuster({
           </div>
         </>
       ) : (
-        <div className={styles.fieldRow}>
-          <div className={styles.field} style={{ flex: 2 }}>
-            <label className={styles.label} htmlFor="quantity">
-              {t('current_qty')} <span className={styles.required}>*</span>
-            </label>
-            <input
-              id="quantity"
-              name="quantity"
-              type="number"
-              min="0"
-              className={styles.input}
-              value={quantity ?? ''}
-              onChange={(e) => onQuantityChange(e.target.value)}
-              required
-            />
+        <>
+          <div className={styles.fieldRow}>
+            <div className={styles.field} style={{ flex: 2 }}>
+              <label className={styles.label} htmlFor="quantity">
+                {t('current_qty')} <span className={styles.required}>*</span>
+              </label>
+              <input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min="0"
+                className={styles.input}
+                value={quantity ?? ''}
+                onChange={(e) => onQuantityChange(e.target.value)}
+                required
+              />
+            </div>
+            <div className={styles.field} style={{ flex: 1 }}>
+              <label className={styles.label} htmlFor="unit">{t('unit')}</label>
+              <select
+                id="unit"
+                name="unit"
+                className={styles.select}
+                value={unit ?? 'each'}
+                onChange={(e) => onUnitChange(e.target.value)}
+              >
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
           </div>
-          <div className={styles.field} style={{ flex: 1 }}>
-            <label className={styles.label} htmlFor="unit">{t('unit')}</label>
-            <select
-              id="unit"
-              name="unit"
-              className={styles.select}
-              value={unit ?? 'each'}
-              onChange={(e) => onUnitChange(e.target.value)}
-            >
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
-          </div>
-        </div>
+          {showModeToggle && onCorrectionNoteChange && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="correctionNote">
+                {t('correction_note_label')}
+              </label>
+              <input
+                id="correctionNote"
+                type="text"
+                className={styles.input}
+                placeholder={t('correction_note_placeholder')}
+                value={correctionNote}
+                onChange={(e) => onCorrectionNoteChange(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+          )}
+        </>
       )}
     </section>
   )

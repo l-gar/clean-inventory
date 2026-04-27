@@ -7,11 +7,18 @@ import {
   faArrowLeft,
   faBarcode,
   faCircleCheck,
+  faBoxOpen,
+  faRightLeft,
+  faLocationDot,
+  faCamera,
+  faXmark,
+  faMinus,
+  faPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useLocations } from '../hooks/useLocations'
 import { callAppsScript } from '../utils/appsScript'
-import { apiAddCatalogItem, apiAddStock, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem } from '../store/api'
+import { apiAddCatalogItem, apiAddStock, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem, apiTransferItem } from '../store/api'
 import { useStore } from '../store'
 import LocationSelect from '../components/LocationSelect'
 import StockAdjuster from '../components/StockAdjuster'
@@ -42,10 +49,8 @@ export default function AddItem() {
   const isMember    = user?.role === 'org_member'
   const canEditAll  = user?.role === 'org_owner' || user?.role === 'manager'
 
-  // 'lookup' → scan / type SKU
-  // 'new_item' → not in org → full add form
   const [phase,      setPhase]      = useState('lookup')
-  const [scanStatus, setScanStatus] = useState('idle') // 'idle' | 'scanning' | 'found'
+  const [scanStatus, setScanStatus] = useState('idle')
   const [skuInput,   setSkuInput]   = useState('')
   const [lookingUp,  setLookingUp]  = useState(false)
 
@@ -60,6 +65,13 @@ export default function AddItem() {
   const [baseQty,          setBaseQty]          = useState(0)
   const [matchedItemId,    setMatchedItemId]    = useState(null)
   const [matchedCatalogId, setMatchedCatalogId] = useState(null)
+
+  const [adjustNote,    setAdjustNote]    = useState('')
+  const [activeTab,     setActiveTab]     = useState('update')
+  const [transferDest,  setTransferDest]  = useState('')
+  const [transferQty,   setTransferQty]   = useState(1)
+  const [transferring,  setTransferring]  = useState(false)
+  const [transferError, setTransferError] = useState('')
 
   const videoRef        = useRef(null)
   const readerRef       = useRef(null)
@@ -114,16 +126,12 @@ export default function AddItem() {
     setBaseQty(0)
     setMatchedItemId(null)
     setMatchedCatalogId(null)
+    setAdjustNote('')
+    setActiveTab('update')
+    setTransferError('')
     setForm({ ...EMPTY_FORM, location: lookupLocation || getDefaultLocation() })
   }
 
-  // ── Core lookup ───────────────────────────────────────────────────────────
-  // 1. Fetch org inventory via store ('all' locations — always, so no location
-  //    is missed; the store cache makes repeat calls instant).
-  // 2. If a barcode match is found client-side, redirect to EditItem.
-  // 3. Call lookupBarcode.  Apps Script now returns existsInInventory + full
-  //    item data when found — redirect to EditItem for those too.
-  // 4. Otherwise pre-fill the new-item form with any product info found.
   async function runLookup(rawCode) {
     const code = rawCode.trim()
     if (!code) return
@@ -131,12 +139,9 @@ export default function AddItem() {
 
     const padded = code.padStart(12, '0')
 
-    // Step 1 — client-side index check (fast path)
-    // fetchInventory is TTL-cached; on cache hit it returns immediately and the
-    // barcodeIndex is already built, so lookupByBarcode below is O(1).
     try {
       await storeFetchInventory(user.email, user.orgId, 'all')
-    } catch { /* fall through — lookupByBarcode will use whatever is cached */ }
+    } catch { /* fall through */ }
 
     const allBarcodeMatches = lookupByBarcode(code)
 
@@ -169,7 +174,6 @@ export default function AddItem() {
       return
     }
 
-    // Item exists in another location — pre-fill everything from it, only ask for quantity
     if (allBarcodeMatches.length > 0) {
       const ref = allBarcodeMatches[0]
       setMatchedCatalogId(ref.catalog_id ?? ref.catalogId ?? null)
@@ -193,7 +197,6 @@ export default function AddItem() {
       return
     }
 
-    // Step 2 — Apps Script lookup chain (org sheet → cache → UPCitemdb → OFN)
     try {
       const data = await callAppsScript('lookupBarcode', { upc: padded })
 
@@ -219,7 +222,6 @@ export default function AddItem() {
         return
       }
 
-      // Product info found from an external source — pre-fill the new-item form
       const title = data?.title ?? data?.name ?? data?.product_name ?? ''
       const brand  = data?.brand ?? ''
       setForm((prev) => ({
@@ -238,7 +240,6 @@ export default function AddItem() {
     setPhase('new_item')
   }
 
-  // ── Camera scanner ────────────────────────────────────────────────────────
   async function startScan() {
     setScanStatus('scanning')
     const reader = new BrowserMultiFormatReader()
@@ -276,9 +277,44 @@ export default function AddItem() {
     ? Math.max(0, baseQty + deltaNum)
     : Math.max(0, Number(form.quantity ?? 0))
 
-  // ── Save ─────────────────────────────────────────────────────────────────
+  function openTransferTab() {
+    const dests = locations.filter((l) => l.location_id !== form.location)
+    setTransferDest(dests[0]?.location_id ?? '')
+    setTransferQty(1)
+    setTransferError('')
+    setActiveTab('transfer')
+  }
+
+  async function handleTransferSubmit() {
+    if (!matchedItemId || !transferDest || transferQty < 1) return
+    setTransferring(true)
+    setTransferError('')
+    try {
+      await apiTransferItem({
+        email: user.email,
+        orgId: user.orgId,
+        fromStockId: matchedItemId,
+        catalogId: String(matchedCatalogId ?? ''),
+        toLocationId: transferDest,
+        quantity: String(transferQty),
+      })
+      invalidateInventory()
+      setActiveTab('update')
+      setSaveSuccess(true)
+      successTimerRef.current = setTimeout(() => {
+        setSaveSuccess(false)
+        resetToLookup()
+      }, 4000)
+    } catch {
+      setTransferError(t('inventory.transferError'))
+    } finally {
+      setTransferring(false)
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    if (activeTab === 'transfer') return
     setSaving(true)
     setSaveError('')
     setSaveSuccess(false)
@@ -290,27 +326,17 @@ export default function AddItem() {
         : Number(form.quantity)
 
       if (matchedItemId) {
-        // Existing stock at this location — adjust quantity
         if (adjustMode) {
           if (deltaNum > 0) {
-            await apiRestockItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: deltaNum })
+            await apiRestockItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: deltaNum, notes: 'Scan & Update: restock' })
           } else if (deltaNum < 0) {
-            await apiDeductItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum) })
+            await apiDeductItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum), notes: 'Scan & Update: usage deduction' })
           }
         } else {
-          await apiAdjustItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: submitQty, notes: 'Manual stock adjustment' })
-        }
-        // Update stock metadata if manager/owner made changes
-        if (canEditAll) {
-          await apiUpdateStock({
-            email: user.email, orgId: user.orgId, stockId: matchedItemId,
-            itemLowStockThreshold: form.itemLowStockThreshold,
-            costPerUnitOverride:   form.costPerUnitOverride,
-            expectedJobs:          form.expectedJobs,
-          })
+          if (!canEditAll) throw new Error(t('scan_update_save_error'))
+          await apiAdjustItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: submitQty, notes: adjustNote.trim() || 'Scan & Update: manual quantity correction' })
         }
       } else if (matchedCatalogId) {
-        // Item exists at another location — add a stock record here
         await apiAddStock({
           email: user.email, orgId: user.orgId,
           catalogId:             matchedCatalogId,
@@ -321,7 +347,6 @@ export default function AddItem() {
           expectedJobs:          form.expectedJobs,
         })
       } else {
-        // Brand new item — create catalog entry then stock record
         const catalogRes = await apiAddCatalogItem({
           email: user.email, orgId: user.orgId,
           itemName:     form.name,
@@ -369,344 +394,407 @@ export default function AddItem() {
   const scanning  = scanStatus === 'scanning'
   const scanFound = scanStatus === 'found'
 
+  const locationName = locations.find((l) => l.location_id === form.location)?.location_name ?? form.location
+  const transferDests = locations.filter((l) => l.location_id !== form.location)
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('scan_update')}</h1>
-        <p className={styles.subtitle}>{t('scan_update_subtitle')}</p>
-      </div>
 
-      {/* ── Phase: lookup ─────────────────────────────────────── */}
+      {/* ── Phase: lookup ─────────────────────────────────────────────── */}
       {phase === 'lookup' && (
-        <section className={styles.scanSection}>
-
-          <div className={styles.lookupLocationRow}>
-            <label className={styles.lookupLocationLabel} htmlFor="lookupLocation">
-              {t('location')}
-            </label>
-            <LocationSelect
-              id="lookupLocation"
-              name="lookupLocation"
-              value={lookupLocation}
-              onChange={handleLookupLocationChange}
-              className={styles.select}
-            />
+        <>
+          <div className={styles.pageHeader}>
+            <h1 className={styles.title}>{t('scan_update')}</h1>
+            <p className={styles.subtitle}>{t('scan_update_subtitle')}</p>
           </div>
 
-          <div className={styles.scanCard}>
-            <div
-              className={`${styles.scanViewfinder} ${scanning ? styles.scanActive : ''} ${scanFound ? styles.scanDone : ''}`}
-            >
-              <video
-                ref={videoRef}
-                className={styles.scanVideo}
-                style={{ display: scanning ? 'block' : 'none' }}
-                playsInline
-                muted
+          <div className={styles.lookupContent}>
+
+            <div className={styles.locationField}>
+              <label className={styles.fieldLabel} htmlFor="lookupLocation">
+                {t('location')}
+              </label>
+              <LocationSelect
+                id="lookupLocation"
+                name="lookupLocation"
+                value={lookupLocation}
+                onChange={handleLookupLocationChange}
+                className={styles.select}
               />
+            </div>
 
-              {scanning && (
-                <>
-                  <div className={styles.scanCorner} data-pos="tl" />
-                  <div className={styles.scanCorner} data-pos="tr" />
-                  <div className={styles.scanCorner} data-pos="bl" />
-                  <div className={styles.scanCorner} data-pos="br" />
-                  <p className={styles.scanHint}>{t('point_camera_at_barcode')}</p>
-                </>
-              )}
+            <div className={styles.scanCard}>
+              <div className={`${styles.scanViewfinder} ${scanning ? styles.scanActive : ''} ${scanFound ? styles.scanDone : ''}`}>
+                <video
+                  ref={videoRef}
+                  className={styles.scanVideo}
+                  style={{ display: scanning ? 'block' : 'none' }}
+                  playsInline
+                  muted
+                />
 
-              {scanFound && (
-                <div className={styles.scanSuccess}>
+                {scanning && (
+                  <>
+                    <div className={styles.scanLine} />
+                    <div className={styles.scanCorner} data-pos="tl" />
+                    <div className={styles.scanCorner} data-pos="tr" />
+                    <div className={styles.scanCorner} data-pos="bl" />
+                    <div className={styles.scanCorner} data-pos="br" />
+                    <p className={styles.scanHint}>{t('point_camera_at_barcode')}</p>
+                    <p className={styles.scanHintSub}>{t('scan_hold_steady')}</p>
+                  </>
+                )}
+
+                {scanFound && (
+                  <div className={styles.scanSuccess}>
+                    <FontAwesomeIcon icon={faCircleCheck} className={styles.scanSuccessIcon} aria-hidden="true" />
+                    <span className={styles.scanSuccessCode}>{skuInput}</span>
+                    {lookingUp && <span className={styles.scanLookup}>{t('looking_up_product')}</span>}
+                  </div>
+                )}
+
+                {!scanning && !scanFound && (
+                  <div className={styles.scanIdle}>
+                    <FontAwesomeIcon icon={faBarcode} className={styles.scanIdleIcon} aria-hidden="true" />
+                    <span>{t('tap_to_scan')}</span>
+                  </div>
+                )}
+              </div>
+
+              {scanning ? (
+                <button type="button" className={`${styles.scanBtn} ${styles.scanBtnStop}`} onClick={stopScan}>
+                  <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
+                  {t('stop_scanning')}
+                </button>
+              ) : scanFound ? (
+                <button
+                  type="button"
+                  className={styles.scanBtn}
+                  onClick={() => runLookup(skuInput)}
+                  disabled={lookingUp}
+                >
                   <FontAwesomeIcon icon={faCircleCheck} aria-hidden="true" />
-                  <span className={styles.scanSuccessCode}>{skuInput}</span>
-                  {lookingUp && (
-                    <span className={styles.scanLookup}>{t('looking_up_product')}</span>
-                  )}
-                </div>
-              )}
-
-              {!scanning && !scanFound && (
-                <div className={styles.scanIdle}>
-                  <FontAwesomeIcon icon={faBarcode} aria-hidden="true" />
-                  <span>{t('tap_to_scan')}</span>
-                </div>
+                  {t('barcode_found_continue')}
+                </button>
+              ) : (
+                <button type="button" className={styles.scanBtn} onClick={startScan} disabled={lookingUp}>
+                  <FontAwesomeIcon icon={faCamera} aria-hidden="true" />
+                  {t('start_camera_scan')}
+                </button>
               )}
             </div>
 
-            {scanning ? (
+            <div className={styles.orDivider}>
+              <div className={styles.orLine} />
+              <span className={styles.orText}>{t('or_enter_sku')}</span>
+              <div className={styles.orLine} />
+            </div>
+
+            <div className={styles.skuRow}>
+              <input
+                className={styles.skuInput}
+                type="text"
+                placeholder={t('sku_lookup_placeholder')}
+                value={skuInput}
+                onChange={(e) => setSkuInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && runLookup(skuInput)}
+              />
               <button
                 type="button"
-                className={`${styles.scanBtn} ${styles.scanBtnStop}`}
-                onClick={stopScan}
+                className={styles.skuBtn}
+                onClick={() => runLookup(skuInput)}
+                disabled={!skuInput.trim() || lookingUp}
               >
-                {t('stop_scanning')}
+                {lookingUp ? t('looking_up_product') : t('look_up')}
               </button>
-            ) : (
-              <button
-                type="button"
-                className={styles.scanBtn}
-                onClick={startScan}
-                disabled={lookingUp}
-              >
-                {t('start_camera_scan')}
-              </button>
-            )}
-          </div>
+            </div>
 
-          <div className={styles.orDivider}>
-            <span>{t('or_enter_sku')}</span>
-          </div>
-
-          <div className={styles.skuRow}>
-            <input
-              className={styles.skuInput}
-              type="text"
-              placeholder={t('sku_lookup_placeholder')}
-              value={skuInput}
-              onChange={(e) => setSkuInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && runLookup(skuInput)}
-            />
-            <button
-              type="button"
-              className={styles.skuBtn}
-              onClick={() => runLookup(skuInput)}
-              disabled={!skuInput.trim() || lookingUp}
-            >
-              {lookingUp ? t('looking_up_product') : t('look_up')}
+            <button type="button" className={styles.addManuallyBtn} onClick={() => setPhase('new_item')}>
+              {t('add_without_scan')}
             </button>
           </div>
-
-          <button
-            type="button"
-            className={styles.addManuallyBtn}
-            onClick={() => setPhase('new_item')}
-          >
-            {t('add_without_scan')}
-          </button>
-
-        </section>
+        </>
       )}
 
-      {/* ── Phase: new item — success splash ─────────────────── */}
+      {/* ── Phase: new item — success splash ──────────────────────────── */}
       {phase === 'new_item' && saveSuccess && (
         <SaveSuccessSplash message={t('item_saved_success')} detail={form.name} />
       )}
 
-      {/* ── Phase: new item form ───────────────────────────────── */}
+      {/* ── Phase: new item form ───────────────────────────────────────── */}
       {phase === 'new_item' && !saveSuccess && (
         <form className={styles.form} onSubmit={handleSubmit}>
 
-          <button type="button" className={styles.backBtn} onClick={resetToLookup}>
-            <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
-            {t('back_to_lookup')}
-          </button>
-
-          {/* Known item: show a read-only info card instead of full detail fields */}
-          {isKnownItem ? (
-            <div className={styles.knownItemCard}>
-              <span className={styles.knownItemName}>{form.name}</span>
-              <div className={styles.knownItemMeta}>
-                {form.brand && <span>{form.brand}</span>}
-                {form.category && <span>{form.category}</span>}
-                {form.sku && <span className={styles.knownItemSku}>{form.sku}</span>}
-              </div>
-            </div>
-          ) : (
-            <section className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
-
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="name">
-                  {t('item_name')} <span className={styles.required}>*</span>
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  className={styles.input}
-                  placeholder={t('item_name_placeholder')}
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="brand">
-                    {t('brand')}
-                  </label>
-                  <input
-                    id="brand"
-                    name="brand"
-                    type="text"
-                    className={styles.input}
-                    placeholder={t('brand_placeholder')}
-                    value={form.brand}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="supplier">
-                    {t('supplier')}
-                  </label>
-                  <input
-                    id="supplier"
-                    name="supplier"
-                    type="text"
-                    className={styles.input}
-                    placeholder={t('supplier_placeholder')}
-                    value={form.supplier}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="sku">
-                  {t('sku_barcode')}
-                </label>
-                <input
-                  id="sku"
-                  name="sku"
-                  type="text"
-                  className={styles.input}
-                  placeholder={t('sku_placeholder')}
-                  value={form.sku}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="category">
-                    {t('category')}
-                  </label>
-                  <CategoryInput
-                    value={form.category}
-                    onChange={handleChange}
-                    className={styles.input}
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="location">
-                    {t('location')} <span className={styles.required}>*</span>
-                  </label>
-                  <LocationSelect
-                    id="location"
-                    name="location"
-                    value={form.location}
-                    onChange={handleChange}
-                    required
-                    className={styles.select}
-                  />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Quantity — all roles */}
-          {isKnownItem ? (
-            <StockAdjuster
-              baseQty={baseQty}
-              unit={form.unit}
-              adjustMode={adjustMode}
-              delta={delta}
-              quantity={form.quantity}
-              onModeToggle={() => { setAdjustMode((m) => !m); setDelta('') }}
-              onDeltaChange={setDelta}
-              onQuantityChange={(val) => setForm((prev) => ({ ...prev, quantity: val }))}
-              onUnitChange={(val) => setForm((prev) => ({ ...prev, unit: val }))}
-            />
-          ) : (
-            <section className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
-              <div className={styles.fieldRow}>
-                <div className={styles.field} style={{ flex: 2 }}>
-                  <label className={styles.label} htmlFor="quantity">
-                    {t('current_qty')} <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    min="0"
-                    className={styles.input}
-                    placeholder="0"
-                    value={form.quantity}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className={styles.field} style={{ flex: 1 }}>
-                  <label className={styles.label} htmlFor="unit">{t('unit')}</label>
-                  <select id="unit" name="unit" className={styles.select} value={form.unit} onChange={handleChange}>
-                    {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Stock settings — manager/owner only */}
-          {canEditAll && (
-            <StockSettings
-              form={form}
-              onChange={handleChange}
-              readOnly={isKnownItem && !!matchedItemId && !canEditAll}
-              showCatalogCost={!isKnownItem}
-              showCostOverride={isKnownItem}
-            />
-          )}
-
-          {/* Description — only for genuinely new items */}
-          {!isKnownItem && (
-            <section className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>{t('description_label')}</h2>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="description">
-                  {t('description_label')}
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  className={styles.textarea}
-                  placeholder={t('description_placeholder')}
-                  rows={3}
-                  value={form.description}
-                  onChange={handleChange}
-                />
-              </div>
-            </section>
-          )}
-
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={resetToLookup}
-              disabled={saving}
-            >
-              {t('clear')}
-            </button>
-            <button
-              type="submit"
-              className={styles.btnPrimary}
-              disabled={saving || (isKnownItem && adjustMode && delta === '')}
-            >
-              {saving ? t('saving') : t('save_item')}
+          <div className={styles.backNav}>
+            <button type="button" className={styles.backBtn} onClick={resetToLookup}>
+              <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+              {t('back_to_lookup')}
             </button>
           </div>
 
-          {saveError && (
-            <p className={styles.saveError} role="alert">{saveError}</p>
-          )}
+          <div className={styles.formContent}>
 
+            {isKnownItem ? (
+              <>
+                {/* ── Found item card ─────────────────────────────── */}
+                <div className={styles.foundItemCard}>
+                  <div className={styles.foundBadgeRow}>
+                    <FontAwesomeIcon icon={faCircleCheck} className={styles.foundBadgeIcon} aria-hidden="true" />
+                    <span className={styles.foundBadgeText}>{t('item_found_in_inventory')}</span>
+                  </div>
+                  <div className={styles.foundItemName}>{form.name}</div>
+                  <div className={styles.foundItemMeta}>
+                    {form.brand && <span className={styles.foundItemBrand}>{form.brand}</span>}
+                    {form.category && <span className={styles.categoryChip}>{form.category}</span>}
+                    {form.sku && <span className={styles.foundItemSku}>{form.sku}</span>}
+                  </div>
+                  {form.location && (
+                    <div className={styles.foundLocationRow}>
+                      <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+                      <span>{locationName}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Update / Transfer tab toggle ─────────────────── */}
+                {matchedItemId && (
+                  <div className={styles.tabToggle}>
+                    <button
+                      type="button"
+                      className={`${styles.tabBtn} ${activeTab === 'update' ? styles.tabBtnActive : ''}`}
+                      onClick={() => setActiveTab('update')}
+                    >
+                      <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
+                      {t('update_stock')}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.tabBtn} ${activeTab === 'transfer' ? styles.tabBtnActive : ''}`}
+                      onClick={openTransferTab}
+                      disabled={transferDests.length === 0}
+                    >
+                      <FontAwesomeIcon icon={faRightLeft} aria-hidden="true" />
+                      {t('inventory.transfer')}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Update tab ───────────────────────────────────── */}
+                {activeTab === 'update' && (
+                  <>
+                    <StockAdjuster
+                      baseQty={baseQty}
+                      unit={form.unit}
+                      adjustMode={adjustMode}
+                      delta={delta}
+                      quantity={form.quantity}
+                      onModeToggle={() => { setAdjustMode((m) => !m); setDelta(''); setAdjustNote('') }}
+                      onDeltaChange={setDelta}
+                      onQuantityChange={(val) => setForm((prev) => ({ ...prev, quantity: val }))}
+                      onUnitChange={(val) => setForm((prev) => ({ ...prev, unit: val }))}
+                      showModeToggle={canEditAll}
+                      correctionNote={adjustNote}
+                      onCorrectionNoteChange={setAdjustNote}
+                    />
+                    <div className={styles.actionBar}>
+                      <button type="button" className={styles.btnSecondary} onClick={resetToLookup} disabled={saving}>
+                        {t('clear')}
+                      </button>
+                      <button
+                        type="submit"
+                        className={styles.btnPrimary}
+                        disabled={saving || (adjustMode && delta === '')}
+                      >
+                        {saving ? t('saving') : t('save_changes')}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Transfer tab (inline) ────────────────────────── */}
+                {activeTab === 'transfer' && (
+                  <div className={styles.transferPanel}>
+                    <div className={styles.field}>
+                      <label className={styles.fieldLabel} htmlFor="transferDest">
+                        {t('inventory.transferTo')}
+                      </label>
+                      <select
+                        id="transferDest"
+                        className={styles.select}
+                        value={transferDest}
+                        onChange={(e) => setTransferDest(e.target.value)}
+                      >
+                        {transferDests.map((l) => (
+                          <option key={l.location_id} value={l.location_id}>{l.location_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.fieldLabel}>{t('inventory.transferQty')}</label>
+                      <div className={styles.stepperRow}>
+                        <button
+                          type="button"
+                          className={styles.stepperBtn}
+                          onClick={() => setTransferQty((q) => Math.max(1, q - 1))}
+                          disabled={transferQty <= 1}
+                        >
+                          <FontAwesomeIcon icon={faMinus} aria-hidden="true" />
+                        </button>
+                        <input
+                          type="number"
+                          className={styles.stepperInput}
+                          value={transferQty}
+                          min={1}
+                          max={baseQty}
+                          onChange={(e) => setTransferQty(Math.max(1, Number(e.target.value)))}
+                        />
+                        <button
+                          type="button"
+                          className={styles.stepperBtn}
+                          onClick={() => setTransferQty((q) => Math.min(baseQty, q + 1))}
+                          disabled={transferQty >= baseQty}
+                        >
+                          <FontAwesomeIcon icon={faPlus} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                    {transferError && <p className={styles.saveError} role="alert">{transferError}</p>}
+                    <div className={styles.actionBar}>
+                      <button type="button" className={styles.btnSecondary} onClick={() => setActiveTab('update')} disabled={transferring}>
+                        {t('cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnPrimary}
+                        onClick={handleTransferSubmit}
+                        disabled={transferring || !transferDest || transferQty < 1}
+                      >
+                        {transferring ? t('saving') : t('inventory.transferConfirm')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* ── New item badge ───────────────────────────────── */}
+                <div className={styles.newItemBadge}>
+                  {t('new_item_badge')}
+                </div>
+
+                {/* ── Item details ─────────────────────────────────── */}
+                <section className={styles.formSection}>
+                  <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
+
+                  <div className={styles.formField}>
+                    <label className={styles.label} htmlFor="name">
+                      {t('item_name')} <span className={styles.required}>*</span>
+                    </label>
+                    <input
+                      id="name" name="name" type="text"
+                      className={styles.input}
+                      placeholder={t('item_name_placeholder')}
+                      value={form.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.fieldRow}>
+                    <div className={styles.formField}>
+                      <label className={styles.label} htmlFor="brand">{t('brand')}</label>
+                      <input id="brand" name="brand" type="text" className={styles.input} placeholder={t('brand_placeholder')} value={form.brand} onChange={handleChange} />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.label} htmlFor="supplier">{t('supplier')}</label>
+                      <input id="supplier" name="supplier" type="text" className={styles.input} placeholder={t('supplier_placeholder')} value={form.supplier} onChange={handleChange} />
+                    </div>
+                  </div>
+
+                  <div className={styles.fieldRow}>
+                    <div className={styles.formField}>
+                      <label className={styles.label} htmlFor="category">{t('category')}</label>
+                      <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.label} htmlFor="location">{t('location')} <span className={styles.required}>*</span></label>
+                      <LocationSelect id="location" name="location" value={form.location} onChange={handleChange} required className={styles.select} />
+                    </div>
+                  </div>
+
+                  <div className={styles.formField}>
+                    <label className={styles.label} htmlFor="sku">{t('sku_barcode')}</label>
+                    <input id="sku" name="sku" type="text" className={styles.input} placeholder={t('sku_placeholder')} value={form.sku} onChange={handleChange} />
+                  </div>
+                </section>
+
+                {/* ── Starting quantity ────────────────────────────── */}
+                <section className={styles.formSection}>
+                  <h2 className={styles.sectionTitle}>{t('starting_qty')}</h2>
+                  <div className={styles.fieldRow}>
+                    <div className={styles.formField} style={{ flex: 2 }}>
+                      <label className={styles.label} htmlFor="quantity">
+                        {t('quantity')} <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="quantity" name="quantity" type="number" min="0"
+                        className={`${styles.input} ${styles.inputLarge}`}
+                        placeholder="0"
+                        value={form.quantity}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className={styles.formField} style={{ flex: 1 }}>
+                      <label className={styles.label} htmlFor="unit">{t('unit')}</label>
+                      <select id="unit" name="unit" className={styles.select} value={form.unit} onChange={handleChange}>
+                        {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ── Stock settings — manager/owner only ──────────── */}
+                {canEditAll && (
+                  <StockSettings
+                    form={form}
+                    onChange={handleChange}
+                    showCatalogCost
+                    showCostOverride={false}
+                  />
+                )}
+
+                {/* ── Notes ───────────────────────────────────────── */}
+                <section className={styles.formSection}>
+                  <h2 className={styles.sectionTitle}>{t('notes')}</h2>
+                  <textarea
+                    id="description" name="description"
+                    className={styles.textarea}
+                    placeholder={t('description_placeholder')}
+                    rows={3}
+                    value={form.description}
+                    onChange={handleChange}
+                  />
+                </section>
+
+                <div className={styles.actionBar}>
+                  <button type="button" className={styles.btnSecondary} onClick={resetToLookup} disabled={saving}>
+                    {t('clear')}
+                  </button>
+                  <button type="submit" className={styles.btnPrimary} disabled={saving}>
+                    {saving ? t('saving') : t('add_item')}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {saveError && (
+              <p className={styles.saveError} role="alert">{saveError}</p>
+            )}
+          </div>
         </form>
       )}
-
     </div>
   )
 }
