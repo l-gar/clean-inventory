@@ -128,7 +128,7 @@ export default function ConnectSheet() {
       }
 
       const { spreadsheetId } = await createRes.json()
-      console.log('[ConnectSheet] Sheet created:', spreadsheetId)
+      // console.log('[ConnectSheet] Sheet created:', spreadsheetId)
 
       // Step 2 — write headers to both tabs
       setLoadingMsg(t('connect_sheet.creating_step_headers'))
@@ -161,7 +161,7 @@ export default function ConnectSheet() {
         throw new Error('create_headers')
       }
 
-      console.log('[ConnectSheet] Headers written')
+      // console.log('[ConnectSheet] Headers written')
 
       // Step 3 — share with admin email as Editor
       setLoadingMsg(t('connect_sheet.creating_step_sharing'))
@@ -190,7 +190,7 @@ export default function ConnectSheet() {
         throw new Error('create_share')
       }
 
-      console.log('[ConnectSheet] Sheet shared with admin')
+      // console.log('[ConnectSheet] Sheet shared with admin')
 
       // Step 4 — register the Sheet ID in Apps Script
       setLoadingMsg(t('connect_sheet.creating_step_connecting'))
@@ -205,7 +205,7 @@ export default function ConnectSheet() {
         throw new Error('connect')
       }
 
-      console.log('[ConnectSheet] connectSheet success — navigating to app')
+      // console.log('[ConnectSheet] connectSheet success — navigating to app')
       updateUser({ orgStatus: 'active', sheetId: spreadsheetId })
       navigate('/scan-update', { replace: true })
     } catch (err) {

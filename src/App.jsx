@@ -60,14 +60,14 @@ function App() {
 
   // Routing diagnostic — fires on every render so you can see exactly what
   // values the guards are evaluating at the moment routing runs.
-  console.log('[App] Routing evaluation:')
-  console.log('[App]   user object      →', user)
-  console.log('[App]   user.role        →', user?.role)
-  console.log('[App]   user.status      →', user?.status)
-  console.log('[App]   user.orgStatus   →', user?.orgStatus)
-  console.log('[App]   needsSheet       →', needsSheet)
-  console.log('[App]   hasLocations     →', hasLocations)
-  console.log('[App]   needsLocations   →', needsLocations)
+  // console.log('[App] Routing evaluation:')
+  // console.log('[App]   user object      →', user)
+  // console.log('[App]   user.role        →', user?.role)
+  // console.log('[App]   user.status      →', user?.status)
+  // console.log('[App]   user.orgStatus   →', user?.orgStatus)
+  // console.log('[App]   needsSheet       →', needsSheet)
+  // console.log('[App]   hasLocations     →', hasLocations)
+  // console.log('[App]   needsLocations   →', needsLocations)
 
   return (
     <Routes>

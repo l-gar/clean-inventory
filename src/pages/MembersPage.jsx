@@ -165,7 +165,7 @@ export default function MembersPage() {
 
   async function handleGenerateInvite() {
     const roleToSend = isOwner ? inviteRole : 'org_member'
-    console.log('[generateInvite] sending role:', roleToSend)
+    // console.log('[generateInvite] sending role:', roleToSend)
     setGenerating(true)
     setGenerateError(null)
     try {

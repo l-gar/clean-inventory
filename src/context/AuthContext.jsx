@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
         const res = await fetch(url)
         const text = await res.text()
         const data = JSON.parse(text)
-        console.log('[Auth] Background revalidation result:', data)
+        // console.log('[Auth] Background revalidation result:', data)
         // Merge fresh data — only update if we still have a user in context
         // (guards against a logout happening during the async call).
         setUser((prev) => (prev ? { ...prev, ...data } : null))
@@ -108,7 +108,7 @@ export function AuthProvider({ children }) {
     setLoading(true)
     try {
       // 1. Token response received from Google implicit flow
-      console.log('[Auth] 1. Google token response received:', tokenResponse)
+      // console.log('[Auth] 1. Google token response received:', tokenResponse)
 
       const token = tokenResponse.access_token
       setAccessToken(token)
@@ -120,8 +120,8 @@ export function AuthProvider({ children }) {
       const userInfo = await userInfoRes.json()
       const email = userInfo.email
 
-      console.log('[Auth] 2. Email from userinfo endpoint:', email)
-      console.log('[Auth]    Full userinfo response:', userInfo)
+      // console.log('[Auth] 2. Email from userinfo endpoint:', email)
+      // console.log('[Auth]    Full userinfo response:', userInfo)
 
       const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL
       const url =
@@ -130,14 +130,14 @@ export function AuthProvider({ children }) {
         `&email=${encodeURIComponent(email)}`
 
       // 3. Full request being sent to Apps Script
-      console.log('[Auth] 3. Sending GET to Apps Script URL:', url)
-      console.log('[Auth]    VITE_APPS_SCRIPT_URL value:', appsScriptUrl)
+      // console.log('[Auth] 3. Sending GET to Apps Script URL:', url)
+      // console.log('[Auth]    VITE_APPS_SCRIPT_URL value:', appsScriptUrl)
 
       const res = await fetch(url)
 
       // 4. Raw response from Apps Script
       const text = await res.text()
-      console.log('[Auth] 4. Raw Apps Script response — status:', res.status, '| body:', text)
+      // console.log('[Auth] 4. Raw Apps Script response — status:', res.status, '| body:', text)
 
       let data
       try {
@@ -148,16 +148,16 @@ export function AuthProvider({ children }) {
       }
 
       // 5a. Full parsed response object — check role AND status before setUser
-      console.log('[Auth] 5a. Parsed Apps Script response object:', data)
-      console.log('[Auth] 5a.   role   →', data.role)
-      console.log('[Auth] 5a.   status →', data.status)
+      // console.log('[Auth] 5a. Parsed Apps Script response object:', data)
+      // console.log('[Auth] 5a.   role   →', data.role)
+      // console.log('[Auth] 5a.   status →', data.status)
 
       const nextUser = { email, ...data }
 
       // 5b. Exact object being written to context (and to localStorage via effect)
-      console.log('[Auth] 5b. User object being stored in context:', nextUser)
-      console.log('[Auth] 5b.   role   →', nextUser.role)
-      console.log('[Auth] 5b.   status →', nextUser.status)
+      // console.log('[Auth] 5b. User object being stored in context:', nextUser)
+      // console.log('[Auth] 5b.   role   →', nextUser.role)
+      // console.log('[Auth] 5b.   status →', nextUser.status)
 
       setUser(nextUser)
     } finally {
