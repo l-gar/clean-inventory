@@ -359,7 +359,9 @@ export default function AddItem() {
           if (deltaNum > 0) {
             await apiRestockItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: deltaNum, notes: adjustNote.trim() || 'Scan & Update: restock' })
           } else if (deltaNum < 0) {
-            await apiDeductItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum), notes: adjustNote.trim() || 'Scan & Update: usage deduction' })
+            // TODO: add UI selector for transaction_type (job_usage vs sale)
+            const deductParams = { email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum), transactionType: 'job_usage', notes: adjustNote.trim() || 'Scan & Update: usage deduction' }
+            await apiDeductItem(deductParams)
           }
         } else {
           if (!canEditAll) throw new Error(t('scan_update_save_error'))

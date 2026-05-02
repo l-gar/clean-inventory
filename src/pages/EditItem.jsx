@@ -98,7 +98,9 @@ export default function EditItem() {
         if (deltaNum > 0) {
           await apiRestockItem({ email: user.email, orgId: user.orgId, stockId, quantity: deltaNum })
         } else if (deltaNum < 0) {
-          await apiDeductItem({ email: user.email, orgId: user.orgId, stockId, quantity: Math.abs(deltaNum) })
+          // TODO: add UI selector for transaction_type (job_usage vs sale)
+          const deductParams = { email: user.email, orgId: user.orgId, stockId, quantity: Math.abs(deltaNum), transactionType: 'job_usage', notes: adjustNote.trim() || 'Edit Item: manual stock reduction' }
+          await apiDeductItem(deductParams)
         }
       } else {
         if (!canEditAll) throw new Error(t('edit_item_save_error'))
