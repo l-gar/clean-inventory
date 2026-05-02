@@ -71,6 +71,16 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - Pages that fetch remote data must seed local state from sessionStorage so stale content displays instantly on hard refresh and navigation; show `InlineLoader` while the background refresh runs
 - `isFirstLoad` pattern: `!hasStaleData && !sliceFetchedTimestamp` — only show `LoadingScreen` when there is truly nothing to display
 
+## Tooltips
+- One `useState(null)` controls which tooltip is open, keyed by a string ID — only one open at a time
+- Trigger button calls `e.stopPropagation()` then toggles the ID; `useEffect` adds a document `click` listener while open to close on outside tap
+- After mount, `useLayoutEffect` + `useRef` clamps horizontal position: reset `left` to `0`, measure `getBoundingClientRect()`, shift by overflow so the tooltip never exits the viewport (8px edge padding)
+- Structure: `.tipWrap` (`position: relative; display: inline-flex`) wraps the trigger button and the tooltip div
+- Tooltip div: `position: absolute; top: calc(100% + 8px); left: 0; z-index: 20` — floats below the trigger, `left` adjusted at runtime by the layout effect
+- Styling: CSS vars only (`--color-surface`, `--gray-200`, `--gray-600`, `box-shadow`) so light/dark mode is automatic — no separate dark-mode overrides needed
+- Arrow: `::before` pseudo-element at `top: -5px; left: 6px`, rotated 45°, matching `background` and `border-top/border-left` of the tooltip
+- Canonical implementation: `src/components/StockSettings.jsx` + `src/components/StockSettings.module.css`
+
 ## Shared UI components
 - Error states → `ErrorState` (`src/components/ErrorState.jsx`): `variant="banner"` (red inline, e.g. InventoryList) or default centered (e.g. MembersPage, Locations)
 - Empty/no-data states → `EmptyState` (`src/components/EmptyState.jsx`): pass `icon`, `title`, optional `body`/`hint`/`action`; use `iconCircle` for prominent full-page empty states, `fill` for full-height centering

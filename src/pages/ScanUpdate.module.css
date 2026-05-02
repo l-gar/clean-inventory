@@ -306,6 +306,77 @@
   cursor: not-allowed;
 }
 
+/* ── Name search ─────────────────────────────────────────────────────────── */
+.nameInput {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--gray-800);
+  background: var(--color-surface);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.nameInput:focus {
+  border-color: var(--green-500);
+  box-shadow: 0 0 0 3px rgba(22,163,74,0.12);
+}
+
+.nameInput::placeholder {
+  color: var(--gray-400);
+}
+
+.nameInput:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nameResultsList {
+  background: var(--color-surface);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-top: -6px;
+}
+
+.nameResultItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border: none;
+  border-bottom: 1px solid var(--gray-100);
+  background: none;
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+}
+
+.nameResultItem:last-child {
+  border-bottom: none;
+}
+
+.nameResultItem:active {
+  background: var(--gray-50);
+}
+
+.nameResultName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.nameResultMeta {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
 /* ── "Add without scanning" link ────────────────────────────────────────── */
 .addManuallyBtn {
   display: block;
@@ -446,6 +517,37 @@
   height: 11px;
 }
 
+.foundLocations {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.foundLocationCurrent {
+  color: var(--green-700);
+  font-weight: 600;
+}
+
+.foundLocationAbsent {
+  opacity: 0.55;
+}
+
+.foundLocBadge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: var(--green-200);
+  color: var(--green-700);
+  white-space: nowrap;
+}
+
+.foundLocBadgeAbsent {
+  background: var(--gray-200);
+  color: var(--gray-500);
+}
+
 /* ── Update / Transfer tab toggle ───────────────────────────────────────── */
 .tabToggle {
   display: flex;
@@ -575,6 +677,54 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
   align-self: flex-start;
+}
+
+/* ── Item details card ──────────────────────────────────────────────────── */
+.detailsCard {
+  background: var(--color-surface);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.detailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--gray-100);
+  border-radius: 16px 16px 0 0;
+}
+
+.detailsIcon {
+  color: var(--green-500);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.detailsTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--gray-500);
+}
+
+.detailsBody {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailsBody .label {
+  text-transform: none;
+}
+
+.detailsBody .input,
+.detailsBody .select {
+  background: var(--gray-50);
 }
 
 /* ── Form sections ──────────────────────────────────────────────────────── */

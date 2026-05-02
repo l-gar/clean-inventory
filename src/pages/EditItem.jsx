@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { apiUpdateCatalogItem, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem } from '../store/api'
 import { parseTrackStock } from '../domain/normalize'
@@ -11,6 +11,7 @@ import LocationSelect from '../components/LocationSelect'
 import CategoryInput from '../components/CategoryInput'
 import StockAdjuster from '../components/StockAdjuster'
 import StockSettings from '../components/StockSettings'
+import NotesSection from '../components/NotesSection'
 import SaveSuccessSplash from '../components/SaveSuccessSplash'
 import styles from './EditItem.module.css'
 
@@ -197,95 +198,57 @@ export default function EditItem() {
 
         {/* ── Item details — owner / manager only ─────────────── */}
         {canEditAll && form && (
-          <section className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="name">
-                {t('item_name')} <span className={styles.required}>*</span>
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                className={styles.input}
-                value={form.name}
-                onChange={handleChange}
-                required
-              />
+          <div className={styles.detailsCard}>
+            <div className={styles.detailsHeader}>
+              <FontAwesomeIcon icon={faPenToSquare} className={styles.detailsIcon} aria-hidden="true" />
+              <span className={styles.detailsTitle}>{t('item_details')}</span>
             </div>
-
-            <div className={styles.fieldRow}>
+            <div className={styles.detailsBody}>
               <div className={styles.field}>
-                <label className={styles.label} htmlFor="brand">
-                  {t('brand')}
+                <label className={styles.label} htmlFor="name">
+                  {t('item_name')} <span className={styles.required}>*</span>
                 </label>
                 <input
-                  id="brand"
-                  name="brand"
+                  id="name"
+                  name="name"
                   type="text"
                   className={styles.input}
-                  value={form.brand}
-                  onChange={handleChange}
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="supplier">
-                  {t('supplier')}
-                </label>
-                <input
-                  id="supplier"
-                  name="supplier"
-                  type="text"
-                  className={styles.input}
-                  placeholder={t('supplier_placeholder')}
-                  value={form.supplier}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="sku">
-                {t('sku_barcode')}
-              </label>
-              <input
-                id="sku"
-                name="sku"
-                type="text"
-                className={styles.input}
-                value={form.sku}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className={styles.fieldRow}>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="category">
-                  {t('category')}
-                </label>
-                <CategoryInput
-                  value={form.category}
-                  onChange={handleChange}
-                  className={styles.input}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="location">
-                  {t('location')} <span className={styles.required}>*</span>
-                </label>
-                <LocationSelect
-                  id="location"
-                  name="location"
-                  value={form.location}
+                  value={form.name}
                   onChange={handleChange}
                   required
-                  className={styles.select}
                 />
               </div>
+
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="brand">{t('brand')}</label>
+                  <input id="brand" name="brand" type="text" className={styles.input} value={form.brand} onChange={handleChange} />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="supplier">{t('supplier')}</label>
+                  <input id="supplier" name="supplier" type="text" className={styles.input} placeholder={t('supplier_placeholder')} value={form.supplier} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="category">{t('category')}</label>
+                  <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="location">
+                    {t('location')} <span className={styles.required}>*</span>
+                  </label>
+                  <LocationSelect id="location" name="location" value={form.location} onChange={handleChange} required className={styles.select} />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="sku">{t('sku_barcode')}</label>
+                <input id="sku" name="sku" type="text" className={styles.input} value={form.sku} onChange={handleChange} />
+              </div>
             </div>
-          </section>
+          </div>
         )}
 
         {/* ── Quantity — all roles ─────────────────────────────── */}
@@ -317,23 +280,7 @@ export default function EditItem() {
 
         {/* ── Description — owner / manager only ─────────────── */}
         {canEditAll && form && (
-          <section className={styles.formSection}>
-            <h2 className={styles.sectionTitle}>{t('description_label')}</h2>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="description">
-                {t('description_label')}
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                className={styles.textarea}
-                placeholder={t('description_placeholder')}
-                rows={3}
-                value={form.description}
-                onChange={handleChange}
-              />
-            </div>
-          </section>
+          <NotesSection value={form.description} onChange={handleChange} />
         )}
 
         <div className={styles.actions}>

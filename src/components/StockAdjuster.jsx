@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faMinus, faPlus, faLayerGroup } from '@fortawesome/free-solid-svg-icons'
 import styles from './StockAdjuster.module.css'
 
 const UNITS = ['each', 'bottle', 'box', 'case', 'gallon', 'liter', 'kg', 'lb']
@@ -27,9 +27,12 @@ export default function StockAdjuster({
     : Math.max(0, Number(quantity ?? 0))
 
   return (
-    <section className={styles.section}>
-      <div className={styles.qtyHeader}>
-        <h2 className={styles.sectionTitle}>{t('quantity')}</h2>
+    <div className={styles.card}>
+      <div className={styles.cardHeader}>
+        <div className={styles.headerLeft}>
+          <FontAwesomeIcon icon={faLayerGroup} className={styles.headerIcon} aria-hidden="true" />
+          <span className={styles.headerTitle}>{t('quantity')}</span>
+        </div>
         {showModeToggle && (
           <button
             type="button"
@@ -40,6 +43,7 @@ export default function StockAdjuster({
           </button>
         )}
       </div>
+      <div className={styles.cardBody}>
 
       {adjustMode ? (
         <>
@@ -92,6 +96,20 @@ export default function StockAdjuster({
               </div>
             )}
           </div>
+          {onCorrectionNoteChange && delta !== '' && delta !== '0' && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="adjustNote">{t('note_label')}</label>
+              <input
+                id="adjustNote"
+                type="text"
+                className={styles.input}
+                placeholder={t('note_placeholder')}
+                value={correctionNote}
+                onChange={(e) => onCorrectionNoteChange(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -142,6 +160,7 @@ export default function StockAdjuster({
           )}
         </>
       )}
-    </section>
+      </div>
+    </div>
   )
 }

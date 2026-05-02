@@ -12,8 +12,7 @@ import {
   faLocationDot,
   faCamera,
   faXmark,
-  faMinus,
-  faPlus,
+  faPenToSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useLocations } from '../hooks/useLocations'
@@ -22,12 +21,30 @@ import { apiAddCatalogItem, apiAddStock, apiUpdateStock, apiDeductItem, apiResto
 import { useStore } from '../store'
 import LocationSelect from '../components/LocationSelect'
 import StockAdjuster from '../components/StockAdjuster'
+import TransferPanel from '../components/TransferPanel'
+import NotesSection from '../components/NotesSection'
 import CategoryInput from '../components/CategoryInput'
 import SaveSuccessSplash from '../components/SaveSuccessSplash'
 import StockSettings from '../components/StockSettings'
 import styles from './ScanUpdate.module.css'
 
 const UNITS = ['each', 'bottle', 'box', 'case', 'gallon', 'liter', 'kg', 'lb']
+
+function searchByName(query, catalog) {
+  const q = query.trim().toLowerCase()
+  const seen = new Set()
+  const results = []
+  for (const item of catalog) {
+    const name = (item.itemName ?? item.item_name ?? '').toLowerCase()
+    if (!name.includes(q)) continue
+    const key = item.catalog_id ?? item.catalogId ?? name
+    if (seen.has(key)) continue
+    seen.add(key)
+    results.push(item)
+    if (results.length === 8) break
+  }
+  return results
+}
 
 const EMPTY_FORM = {
   name: '', brand: '', supplier: '', sku: '', category: '',
@@ -45,6 +62,8 @@ export default function AddItem() {
   const invalidateCatalog   = useStore((s) => s.invalidateCatalog)
   const storeFetchInventory = useStore((s) => s.fetchInventory)
   const lookupByBarcode     = useStore((s) => s.lookupByBarcode)
+  const catalog             = useStore((s) => s.catalog)
+  const fetchCatalog        = useStore((s) => s.fetchCatalog)
 
   const isMember    = user?.role === 'org_member'
   const canEditAll  = user?.role === 'org_owner' || user?.role === 'manager'
@@ -66,10 +85,12 @@ export default function AddItem() {
   const [matchedItemId,    setMatchedItemId]    = useState(null)
   const [matchedCatalogId, setMatchedCatalogId] = useState(null)
 
+  const [nameQuery,     setNameQuery]     = useState('')
   const [adjustNote,    setAdjustNote]    = useState('')
   const [activeTab,     setActiveTab]     = useState('update')
   const [transferDest,  setTransferDest]  = useState('')
   const [transferQty,   setTransferQty]   = useState(1)
+  const [transferNote,  setTransferNote]  = useState('')
   const [transferring,  setTransferring]  = useState(false)
   const [transferError, setTransferError] = useState('')
 
@@ -92,6 +113,10 @@ export default function AddItem() {
       return locations[0].location_id
     })
   }, [isMember, locations])
+
+  useEffect(() => {
+    if (user?.email && user?.orgId) fetchCatalog(user.email, user.orgId).catch(() => {})
+  }, [user?.email, user?.orgId])
 
   useEffect(() => {
     return () => {
@@ -127,8 +152,10 @@ export default function AddItem() {
     setMatchedItemId(null)
     setMatchedCatalogId(null)
     setAdjustNote('')
+    setNameQuery('')
     setActiveTab('update')
     setTransferError('')
+    setTransferNote('')
     setForm({ ...EMPTY_FORM, location: lookupLocation || getDefaultLocation() })
   }
 
@@ -281,6 +308,7 @@ export default function AddItem() {
     const dests = locations.filter((l) => l.location_id !== form.location)
     setTransferDest(dests[0]?.location_id ?? '')
     setTransferQty(1)
+    setTransferNote('')
     setTransferError('')
     setActiveTab('transfer')
   }
@@ -297,6 +325,7 @@ export default function AddItem() {
         catalogId: String(matchedCatalogId ?? ''),
         toLocationId: transferDest,
         quantity: String(transferQty),
+        notes: transferNote.trim() || 'Scan & Update: transfer',
       })
       invalidateInventory()
       setActiveTab('update')
@@ -328,9 +357,9 @@ export default function AddItem() {
       if (matchedItemId) {
         if (adjustMode) {
           if (deltaNum > 0) {
-            await apiRestockItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: deltaNum, notes: 'Scan & Update: restock' })
+            await apiRestockItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: deltaNum, notes: adjustNote.trim() || 'Scan & Update: restock' })
           } else if (deltaNum < 0) {
-            await apiDeductItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum), notes: 'Scan & Update: usage deduction' })
+            await apiDeductItem({ email: user.email, orgId: user.orgId, stockId: matchedItemId, quantity: Math.abs(deltaNum), notes: adjustNote.trim() || 'Scan & Update: usage deduction' })
           }
         } else {
           if (!canEditAll) throw new Error(t('scan_update_save_error'))
@@ -391,11 +420,44 @@ export default function AddItem() {
     setForm((prev) => ({ ...prev, [e.target.name]: value }))
   }
 
+  function handleCatalogSelect(catalogItem) {
+    const barcode = String(catalogItem.barcode ?? catalogItem.sku ?? '').trim()
+    if (barcode) {
+      const itemName = catalogItem.itemName ?? catalogItem.item_name ?? ''
+      setNameQuery(itemName)
+      setSkuInput(barcode)
+      setScanStatus('found')
+      runLookup(barcode)
+      return
+    }
+    setNameQuery('')
+    // No barcode — populate form directly and let user add to current location
+    setForm((prev) => ({
+      ...prev,
+      sku:      '',
+      name:     catalogItem.itemName ?? catalogItem.item_name ?? '',
+      brand:    catalogItem.brand ?? '',
+      category: catalogItem.category ?? prev.category,
+      unit:     catalogItem.unit ?? prev.unit,
+      location: lookupLocation || prev.location,
+      itemLowStockThreshold: String(catalogItem.reorder_point ?? catalogItem.reorderPoint ?? ''),
+      costPerUnit:           String(catalogItem.cost_per_unit ?? catalogItem.costPerUnit ?? ''),
+      trackStock:            catalogItem.track_stock ?? catalogItem.trackStock ?? true,
+    }))
+    setMatchedItemId(null)
+    setMatchedCatalogId(catalogItem.catalog_id ?? catalogItem.catalogId ?? null)
+    setIsKnownItem(true)
+    setPhase('new_item')
+  }
+
   const scanning  = scanStatus === 'scanning'
   const scanFound = scanStatus === 'found'
 
+  const nameResults = nameQuery.trim().length >= 2 ? searchByName(nameQuery, catalog) : []
   const locationName = locations.find((l) => l.location_id === form.location)?.location_name ?? form.location
   const transferDests = locations.filter((l) => l.location_id !== form.location)
+  const allMatches = isKnownItem && form.sku ? lookupByBarcode(form.sku) : []
+  const itemAtCurrentLoc = matchedItemId !== null
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -510,6 +572,44 @@ export default function AddItem() {
               </button>
             </div>
 
+            <div className={styles.orDivider}>
+              <div className={styles.orLine} />
+              <span className={styles.orText}>{t('or_search_name')}</span>
+              <div className={styles.orLine} />
+            </div>
+
+            <input
+              className={styles.nameInput}
+              type="text"
+              placeholder={t('name_search_placeholder')}
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+              disabled={lookingUp}
+            />
+
+            {nameResults.length > 0 && !lookingUp && (
+              <div className={styles.nameResultsList}>
+                {nameResults.map((item) => {
+                  const key = item.catalog_id ?? item.catalogId ?? item.itemName
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={styles.nameResultItem}
+                      onClick={() => handleCatalogSelect(item)}
+                    >
+                      <span className={styles.nameResultName}>{item.itemName ?? item.item_name}</span>
+                      {(item.brand || item.category) && (
+                        <span className={styles.nameResultMeta}>
+                          {[item.brand, item.category].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
             <button type="button" className={styles.addManuallyBtn} onClick={() => setPhase('new_item')}>
               {t('add_without_scan')}
             </button>
@@ -549,12 +649,33 @@ export default function AddItem() {
                     {form.category && <span className={styles.categoryChip}>{form.category}</span>}
                     {form.sku && <span className={styles.foundItemSku}>{form.sku}</span>}
                   </div>
-                  {form.location && (
-                    <div className={styles.foundLocationRow}>
-                      <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
-                      <span>{locationName}</span>
-                    </div>
-                  )}
+                  <div className={styles.foundLocations}>
+                    {allMatches.map((m) => {
+                      const lid = m.location_id ?? m.locationId
+                      const lname = locations.find((l) => l.location_id === lid)?.location_name ?? lid
+                      const isCurrent = lid === lookupLocation
+                      return (
+                        <div key={lid} className={`${styles.foundLocationRow}${isCurrent ? ` ${styles.foundLocationCurrent}` : ''}`}>
+                          <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+                          <span>{lname}</span>
+                          {isCurrent && <span className={styles.foundLocBadge}>{t('here')}</span>}
+                        </div>
+                      )
+                    })}
+                    {!itemAtCurrentLoc && lookupLocation && (
+                      <div className={`${styles.foundLocationRow} ${styles.foundLocationAbsent}`}>
+                        <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+                        <span>{locations.find((l) => l.location_id === lookupLocation)?.location_name ?? lookupLocation}</span>
+                        <span className={`${styles.foundLocBadge} ${styles.foundLocBadgeAbsent}`}>{t('not_present_here')}</span>
+                      </div>
+                    )}
+                    {allMatches.length === 0 && (itemAtCurrentLoc || !lookupLocation) && form.location && (
+                      <div className={styles.foundLocationRow}>
+                        <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+                        <span>{locationName}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── Update / Transfer tab toggle ─────────────────── */}
@@ -615,64 +736,20 @@ export default function AddItem() {
                 {/* ── Transfer tab (inline) ────────────────────────── */}
                 {activeTab === 'transfer' && (
                   <div className={styles.transferPanel}>
-                    <div className={styles.field}>
-                      <label className={styles.fieldLabel} htmlFor="transferDest">
-                        {t('inventory.transferTo')}
-                      </label>
-                      <select
-                        id="transferDest"
-                        className={styles.select}
-                        value={transferDest}
-                        onChange={(e) => setTransferDest(e.target.value)}
-                      >
-                        {transferDests.map((l) => (
-                          <option key={l.location_id} value={l.location_id}>{l.location_name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles.field}>
-                      <label className={styles.fieldLabel}>{t('inventory.transferQty')}</label>
-                      <div className={styles.stepperRow}>
-                        <button
-                          type="button"
-                          className={styles.stepperBtn}
-                          onClick={() => setTransferQty((q) => Math.max(1, q - 1))}
-                          disabled={transferQty <= 1}
-                        >
-                          <FontAwesomeIcon icon={faMinus} aria-hidden="true" />
-                        </button>
-                        <input
-                          type="number"
-                          className={styles.stepperInput}
-                          value={transferQty}
-                          min={1}
-                          max={baseQty}
-                          onChange={(e) => setTransferQty(Math.max(1, Number(e.target.value)))}
-                        />
-                        <button
-                          type="button"
-                          className={styles.stepperBtn}
-                          onClick={() => setTransferQty((q) => Math.min(baseQty, q + 1))}
-                          disabled={transferQty >= baseQty}
-                        >
-                          <FontAwesomeIcon icon={faPlus} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </div>
-                    {transferError && <p className={styles.saveError} role="alert">{transferError}</p>}
-                    <div className={styles.actionBar}>
-                      <button type="button" className={styles.btnSecondary} onClick={() => setActiveTab('update')} disabled={transferring}>
-                        {t('cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.btnPrimary}
-                        onClick={handleTransferSubmit}
-                        disabled={transferring || !transferDest || transferQty < 1}
-                      >
-                        {transferring ? t('saving') : t('inventory.transferConfirm')}
-                      </button>
-                    </div>
+                    <TransferPanel
+                      destinations={transferDests}
+                      dest={transferDest}
+                      onDestChange={setTransferDest}
+                      qty={transferQty}
+                      onQtyChange={setTransferQty}
+                      maxQty={baseQty}
+                      note={transferNote}
+                      onNoteChange={setTransferNote}
+                      error={transferError}
+                      transferring={transferring}
+                      onCancel={() => setActiveTab('update')}
+                      onConfirm={handleTransferSubmit}
+                    />
                   </div>
                 )}
               </>
@@ -684,50 +761,54 @@ export default function AddItem() {
                 </div>
 
                 {/* ── Item details ─────────────────────────────────── */}
-                <section className={styles.formSection}>
-                  <h2 className={styles.sectionTitle}>{t('item_details')}</h2>
-
-                  <div className={styles.formField}>
-                    <label className={styles.label} htmlFor="name">
-                      {t('item_name')} <span className={styles.required}>*</span>
-                    </label>
-                    <input
-                      id="name" name="name" type="text"
-                      className={styles.input}
-                      placeholder={t('item_name_placeholder')}
-                      value={form.name}
-                      onChange={handleChange}
-                      required
-                    />
+                <div className={styles.detailsCard}>
+                  <div className={styles.detailsHeader}>
+                    <FontAwesomeIcon icon={faPenToSquare} className={styles.detailsIcon} aria-hidden="true" />
+                    <span className={styles.detailsTitle}>{t('item_details')}</span>
                   </div>
-
-                  <div className={styles.fieldRow}>
+                  <div className={styles.detailsBody}>
                     <div className={styles.formField}>
-                      <label className={styles.label} htmlFor="brand">{t('brand')}</label>
-                      <input id="brand" name="brand" type="text" className={styles.input} placeholder={t('brand_placeholder')} value={form.brand} onChange={handleChange} />
+                      <label className={styles.label} htmlFor="name">
+                        {t('item_name')} <span className={styles.required}>*</span>
+                      </label>
+                      <input
+                        id="name" name="name" type="text"
+                        className={styles.input}
+                        placeholder={t('item_name_placeholder')}
+                        value={form.name}
+                        onChange={handleChange}
+                        required
+                      />
                     </div>
+
+                    <div className={styles.fieldRow}>
+                      <div className={styles.formField}>
+                        <label className={styles.label} htmlFor="brand">{t('brand')}</label>
+                        <input id="brand" name="brand" type="text" className={styles.input} placeholder={t('brand_placeholder')} value={form.brand} onChange={handleChange} />
+                      </div>
+                      <div className={styles.formField}>
+                        <label className={styles.label} htmlFor="supplier">{t('supplier')}</label>
+                        <input id="supplier" name="supplier" type="text" className={styles.input} placeholder={t('supplier_placeholder')} value={form.supplier} onChange={handleChange} />
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldRow}>
+                      <div className={styles.formField}>
+                        <label className={styles.label} htmlFor="category">{t('category')}</label>
+                        <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
+                      </div>
+                      <div className={styles.formField}>
+                        <label className={styles.label} htmlFor="location">{t('location')} <span className={styles.required}>*</span></label>
+                        <LocationSelect id="location" name="location" value={form.location} onChange={handleChange} required className={styles.select} />
+                      </div>
+                    </div>
+
                     <div className={styles.formField}>
-                      <label className={styles.label} htmlFor="supplier">{t('supplier')}</label>
-                      <input id="supplier" name="supplier" type="text" className={styles.input} placeholder={t('supplier_placeholder')} value={form.supplier} onChange={handleChange} />
+                      <label className={styles.label} htmlFor="sku">{t('sku_barcode')}</label>
+                      <input id="sku" name="sku" type="text" className={styles.input} placeholder={t('sku_placeholder')} value={form.sku} onChange={handleChange} />
                     </div>
                   </div>
-
-                  <div className={styles.fieldRow}>
-                    <div className={styles.formField}>
-                      <label className={styles.label} htmlFor="category">{t('category')}</label>
-                      <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
-                    </div>
-                    <div className={styles.formField}>
-                      <label className={styles.label} htmlFor="location">{t('location')} <span className={styles.required}>*</span></label>
-                      <LocationSelect id="location" name="location" value={form.location} onChange={handleChange} required className={styles.select} />
-                    </div>
-                  </div>
-
-                  <div className={styles.formField}>
-                    <label className={styles.label} htmlFor="sku">{t('sku_barcode')}</label>
-                    <input id="sku" name="sku" type="text" className={styles.input} placeholder={t('sku_placeholder')} value={form.sku} onChange={handleChange} />
-                  </div>
-                </section>
+                </div>
 
                 {/* ── Starting quantity ────────────────────────────── */}
                 <section className={styles.formSection}>
@@ -765,18 +846,7 @@ export default function AddItem() {
                   />
                 )}
 
-                {/* ── Notes ───────────────────────────────────────── */}
-                <section className={styles.formSection}>
-                  <h2 className={styles.sectionTitle}>{t('notes')}</h2>
-                  <textarea
-                    id="description" name="description"
-                    className={styles.textarea}
-                    placeholder={t('description_placeholder')}
-                    rows={3}
-                    value={form.description}
-                    onChange={handleChange}
-                  />
-                </section>
+                <NotesSection value={form.description} onChange={handleChange} />
 
                 <div className={styles.actionBar}>
                   <button type="button" className={styles.btnSecondary} onClick={resetToLookup} disabled={saving}>
