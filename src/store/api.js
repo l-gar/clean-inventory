@@ -25,6 +25,7 @@
  */
 
 import { callAppsScript } from '../utils/appsScript'
+import { normalizeActivityEntry } from '../domain/normalize'
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,8 @@ export async function apiGetOrgMembers({ email, orgId }) {
 export async function apiGetActivityLog({ email, orgId, locationId }) {
   const data = await callAppsScript('getActivityLog', { email, orgId, locationId })
   if (data.success === false) throw new Error(data.error ?? 'failed')
-  return data.log ?? data.entries ?? []
+  const raw = data.log ?? data.entries ?? []
+  return raw.map(normalizeActivityEntry)
 }
 
 export async function apiGetActiveInvites({ email, orgId }) {

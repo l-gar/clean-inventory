@@ -2,15 +2,14 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowLeft, faPenToSquare, faHeartPulse } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faPenToSquare, faHeartPulse, faTag, faLocationDot, faBarcode } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { apiUpdateCatalogItem, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem } from '../store/api'
 import { parseTrackStock } from '../domain/normalize'
 import { useStore } from '../store'
-import LocationSelect from '../components/LocationSelect'
+import { useLocations } from '../hooks/useLocations'
 import CategoryInput from '../components/CategoryInput'
 import StockAdjuster from '../components/StockAdjuster'
-import StockSettings from '../components/StockSettings'
 import NotesSection from '../components/NotesSection'
 import SaveSuccessSplash from '../components/SaveSuccessSplash'
 import styles from './EditItem.module.css'
@@ -59,6 +58,8 @@ export default function EditItem() {
   const isManager  = user?.role === 'manager'
   const canEditAll = isOwner || isManager
 
+  const { locations } = useLocations()
+
   // Resolve item: router state (scan redirect) → store cache → not found
   const resolvedItem =
     routeState?.item ??
@@ -66,6 +67,8 @@ export default function EditItem() {
     null
 
   const [form,        setForm]        = useState(() => resolvedItem ? itemToForm(resolvedItem) : null)
+
+  const locationName = locations.find(l => l.location_id === form?.location)?.location_name ?? ''
   const [adjustMode,  setAdjustMode]  = useState(true)   // default on for scan flow
   const [delta,       setDelta]       = useState('')
   const [adjustNote,  setAdjustNote]  = useState('')
@@ -73,23 +76,23 @@ export default function EditItem() {
   const [saveError,   setSaveError]   = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const [healthTip, setHealthTip] = useState(null)
-  const healthTipRef = useRef(null)
+  const [openTip, setOpenTip] = useState(null)
+  const tipRef = useRef(null)
 
-  const toggleHealthTip = (id, e) => {
+  const toggleTip = (id, e) => {
     e.stopPropagation()
-    setHealthTip((prev) => (prev === id ? null : id))
+    setOpenTip((prev) => (prev === id ? null : id))
   }
 
   useEffect(() => {
-    if (!healthTip) return
-    const close = () => setHealthTip(null)
+    if (!openTip) return
+    const close = () => setOpenTip(null)
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
-  }, [healthTip])
+  }, [openTip])
 
   useLayoutEffect(() => {
-    const el = healthTipRef.current
+    const el = tipRef.current
     if (!el) return
     el.style.left = '0'
     const { left, right } = el.getBoundingClientRect()
@@ -97,7 +100,7 @@ export default function EditItem() {
     const leftOverflow  = 8 - left
     if (rightOverflow > 0) el.style.left = `${-rightOverflow}px`
     else if (leftOverflow > 0) el.style.left = `${leftOverflow}px`
-  }, [healthTip])
+  }, [openTip])
 
   // If store was empty on mount but populates later, seed the form
   useEffect(() => {
@@ -227,8 +230,27 @@ export default function EditItem() {
           <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
           {t('back')}
         </button>
-        <h1 className={styles.title}>{t('edit_item')}</h1>
-        <p className={styles.itemSubtitle}>{form?.name || resolvedItem?.itemName}</p>
+        <h1 className={styles.title}>{form?.name || resolvedItem?.itemName}</h1>
+        <div className={styles.headerChips}>
+          {form?.category && (
+            <span className={`${styles.chip} ${styles.chipCategory}`}>
+              <FontAwesomeIcon icon={faTag} aria-hidden="true" />
+              {form.category}
+            </span>
+          )}
+          {locationName && (
+            <span className={`${styles.chip} ${styles.chipNeutral}`}>
+              <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+              {locationName}
+            </span>
+          )}
+          {form?.sku && (
+            <span className={`${styles.chip} ${styles.chipSku}`}>
+              <FontAwesomeIcon icon={faBarcode} aria-hidden="true" />
+              {form.sku}
+            </span>
+          )}
+        </div>
       </div>
 
       {saveSuccess && (
@@ -274,17 +296,9 @@ export default function EditItem() {
                 </div>
               </div>
 
-              <div className={styles.fieldRow}>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="category">{t('category')}</label>
-                  <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label} htmlFor="location">
-                    {t('location')} <span className={styles.required}>*</span>
-                  </label>
-                  <LocationSelect id="location" name="location" value={form.location} onChange={handleChange} required className={styles.select} />
-                </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="category">{t('category')}</label>
+                <CategoryInput value={form.category} onChange={handleChange} className={styles.input} />
               </div>
 
               <div className={styles.field}>
@@ -312,98 +326,146 @@ export default function EditItem() {
           onCorrectionNoteChange={setAdjustNote}
         />
 
-        {/* ── Stock settings — owner / manager only ───────────── */}
-        {canEditAll && form && (
-          <StockSettings
-            form={form}
-            onChange={handleChange}
-            showCatalogCost
-            showCostOverride
-          />
+        {/* ── Catalog — owner only ────────────────────────────── */}
+        {isOwner && form && (
+          <div className={styles.detailsCard}>
+            <div className={styles.detailsHeader}>
+              <FontAwesomeIcon icon={faTag} className={styles.detailsIcon} aria-hidden="true" />
+              <span className={styles.detailsTitle}>{t('catalog_settings')}</span>
+            </div>
+            <div className={styles.detailsBody}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="costPerUnit">{t('cost_per_unit')}</label>
+                <input
+                  id="costPerUnit"
+                  name="costPerUnit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={styles.input}
+                  placeholder={t('cost_per_unit_placeholder')}
+                  value={form.costPerUnit}
+                  onChange={handleChange}
+                />
+              </div>
+              <label className={styles.trackRow}>
+                <div className={styles.trackText}>
+                  <span className={styles.trackLabel}>{t('track_stock')}</span>
+                  <span className={styles.trackSub}>{t('track_stock_sub')}</span>
+                </div>
+                <span className={styles.switchTrack}>
+                  <input
+                    type="checkbox"
+                    name="trackStock"
+                    checked={!!form.trackStock}
+                    onChange={handleChange}
+                    className={styles.switchInput}
+                  />
+                  <span className={styles.switchThumb} />
+                </span>
+              </label>
+            </div>
+          </div>
         )}
 
-        {/* ── Health settings — owner / manager only ──────────── */}
-        {canEditAll && form && (
+        {/* ── Health targets — owner only ──────────────────────── */}
+        {isOwner && form && (
           <div className={styles.detailsCard}>
             <div className={styles.detailsHeader}>
               <FontAwesomeIcon icon={faHeartPulse} className={styles.detailsIcon} aria-hidden="true" />
-              <span className={styles.detailsTitle}>{t('health_settings')}</span>
+              <span className={styles.detailsTitle}>{t('health_targets')}</span>
             </div>
             <div className={styles.detailsBody}>
-              {isOwner && (
-                <>
-                  <div className={styles.fieldRow}>
-                    <div className={styles.field}>
-                      <div className={styles.labelRow}>
-                        <label className={styles.label} htmlFor="targetQuantity">{t('target_qty')}</label>
-                        <span className={styles.tipWrap}>
-                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('targetQty', e)} aria-expanded={healthTip === 'targetQty'} aria-label={t('more_info')}>i</button>
-                          {healthTip === 'targetQty' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('target_qty_tip')}</div>}
-                        </span>
-                      </div>
-                      <input id="targetQuantity" name="targetQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.targetQuantity} onChange={handleChange} />
-                    </div>
-                    <div className={styles.field}>
-                      <div className={styles.labelRow}>
-                        <label className={styles.label} htmlFor="restockCycleDays">{t('restock_cycle_days')}</label>
-                        <span className={styles.tipWrap}>
-                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('cycleDays', e)} aria-expanded={healthTip === 'cycleDays'} aria-label={t('more_info')}>i</button>
-                          {healthTip === 'cycleDays' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('restock_cycle_days_tip')}</div>}
-                        </span>
-                      </div>
-                      <input id="restockCycleDays" name="restockCycleDays" type="number" min="0" className={styles.input} placeholder="—" value={form.restockCycleDays} onChange={handleChange} />
-                    </div>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label} htmlFor="targetQuantity">{t('target_qty')}</label>
+                    <span className={styles.tipWrap}>
+                      <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('targetQty', e)} aria-expanded={openTip === 'targetQty'} aria-label={t('more_info')}>i</button>
+                      {openTip === 'targetQty' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('target_qty_tip')}</div>}
+                    </span>
                   </div>
-                  <div className={styles.fieldRow}>
-                    <div className={styles.field}>
-                      <div className={styles.labelRow}>
-                        <label className={styles.label} htmlFor="reorderPoint">{t('reorder_point')}</label>
-                        <span className={styles.tipWrap}>
-                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('reorderPoint', e)} aria-expanded={healthTip === 'reorderPoint'} aria-label={t('more_info')}>i</button>
-                          {healthTip === 'reorderPoint' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('reorder_point_tip')}</div>}
-                        </span>
-                      </div>
-                      <input id="reorderPoint" name="reorderPoint" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderPoint} onChange={handleChange} />
-                    </div>
-                    <div className={styles.field}>
-                      <div className={styles.labelRow}>
-                        <label className={styles.label} htmlFor="reorderQuantity">{t('reorder_quantity')}</label>
-                        <span className={styles.tipWrap}>
-                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('reorderQty', e)} aria-expanded={healthTip === 'reorderQty'} aria-label={t('more_info')}>i</button>
-                          {healthTip === 'reorderQty' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('reorder_quantity_tip')}</div>}
-                        </span>
-                      </div>
-                      <input id="reorderQuantity" name="reorderQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderQuantity} onChange={handleChange} />
-                    </div>
+                  <input id="targetQuantity" name="targetQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.targetQuantity} onChange={handleChange} />
+                </div>
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label} htmlFor="restockCycleDays">{t('restock_cycle_days')}</label>
+                    <span className={styles.tipWrap}>
+                      <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('cycleDays', e)} aria-expanded={openTip === 'cycleDays'} aria-label={t('more_info')}>i</button>
+                      {openTip === 'cycleDays' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('restock_cycle_days_tip')}</div>}
+                    </span>
                   </div>
-                </>
-              )}
+                  <input id="restockCycleDays" name="restockCycleDays" type="number" min="0" className={styles.input} placeholder="—" value={form.restockCycleDays} onChange={handleChange} />
+                </div>
+              </div>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label} htmlFor="reorderPoint">{t('reorder_point')}</label>
+                    <span className={styles.tipWrap}>
+                      <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('reorderPoint', e)} aria-expanded={openTip === 'reorderPoint'} aria-label={t('more_info')}>i</button>
+                      {openTip === 'reorderPoint' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('reorder_point_tip')}</div>}
+                    </span>
+                  </div>
+                  <input id="reorderPoint" name="reorderPoint" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderPoint} onChange={handleChange} />
+                </div>
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label} htmlFor="reorderQuantity">{t('reorder_quantity')}</label>
+                    <span className={styles.tipWrap}>
+                      <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('reorderQty', e)} aria-expanded={openTip === 'reorderQty'} aria-label={t('more_info')}>i</button>
+                      {openTip === 'reorderQty' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('reorder_quantity_tip')}</div>}
+                    </span>
+                  </div>
+                  <input id="reorderQuantity" name="reorderQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderQuantity} onChange={handleChange} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── This location — owner / manager only ─────────────── */}
+        {canEditAll && form && (
+          <div className={styles.detailsCard}>
+            <div className={styles.detailsHeader}>
+              <FontAwesomeIcon icon={faLocationDot} className={styles.detailsIcon} aria-hidden="true" />
+              <span className={styles.detailsTitle}>{t('this_location')}</span>
+            </div>
+            <div className={styles.detailsBody}>
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label} htmlFor="itemLowStockThreshold">{t('alert_below')}</label>
+                    <span className={styles.tipWrap}>
+                      <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('alertBelow', e)} aria-expanded={openTip === 'alertBelow'} aria-label={t('more_info')}>i</button>
+                      {openTip === 'alertBelow' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('alert_below_tip')}</div>}
+                    </span>
+                  </div>
+                  <input id="itemLowStockThreshold" name="itemLowStockThreshold" type="number" min="0" className={styles.input} placeholder="0" value={form.itemLowStockThreshold} onChange={handleChange} />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="costPerUnitOverride">{t('cost_per_unit_override')}</label>
+                  <input id="costPerUnitOverride" name="costPerUnitOverride" type="number" min="0" step="0.01" className={styles.input} placeholder="—" value={form.costPerUnitOverride} onChange={handleChange} />
+                </div>
+              </div>
+              <div className={styles.field}>
+                <div className={styles.labelRow}>
+                  <label className={styles.label} htmlFor="expectedJobs">{t('expected_jobs')}</label>
+                  <span className={styles.tipWrap}>
+                    <button type="button" className={styles.infoBtn} onClick={(e) => toggleTip('expectedJobs', e)} aria-expanded={openTip === 'expectedJobs'} aria-label={t('more_info')}>i</button>
+                    {openTip === 'expectedJobs' && <div ref={tipRef} className={styles.tooltip} role="tooltip">{t('expected_jobs_tip')}</div>}
+                  </span>
+                </div>
+                <input id="expectedJobs" name="expectedJobs" type="number" min="0" step="any" className={styles.input} placeholder={t('expected_jobs_placeholder')} value={form.expectedJobs} onChange={handleChange} />
+              </div>
               <div className={styles.fieldRow}>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="targetQuantityOverride">{t('target_qty_override')}</label>
-                  <input
-                    id="targetQuantityOverride"
-                    name="targetQuantityOverride"
-                    type="number"
-                    min="0"
-                    className={styles.input}
-                    placeholder={form.targetQuantity || '—'}
-                    value={form.targetQuantityOverride}
-                    onChange={handleChange}
-                  />
+                  <input id="targetQuantityOverride" name="targetQuantityOverride" type="number" min="0" className={styles.input} placeholder={form.targetQuantity || '—'} value={form.targetQuantityOverride} onChange={handleChange} />
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="restockCycleDaysOverride">{t('restock_cycle_override')}</label>
-                  <input
-                    id="restockCycleDaysOverride"
-                    name="restockCycleDaysOverride"
-                    type="number"
-                    min="0"
-                    className={styles.input}
-                    placeholder={form.restockCycleDays || '—'}
-                    value={form.restockCycleDaysOverride}
-                    onChange={handleChange}
-                  />
+                  <input id="restockCycleDaysOverride" name="restockCycleDaysOverride" type="number" min="0" className={styles.input} placeholder={form.restockCycleDays || '—'} value={form.restockCycleDaysOverride} onChange={handleChange} />
                 </div>
               </div>
             </div>

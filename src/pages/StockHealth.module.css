@@ -354,9 +354,43 @@
 
 .cardMetaExtra {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forecastRow {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.forecastIcon {
+  font-size: 10px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.forecastValue {
+  display: flex;
+  align-items: center;
+}
+
+.forecastDays {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gray-700);
+}
+
+.forecastDot {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin: 0 3px;
+}
+
+.forecastDate {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-500);
 }
 
 /* ── Urgency badges ───────────────────────────────────────────────────────── */

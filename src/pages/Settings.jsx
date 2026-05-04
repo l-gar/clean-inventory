@@ -12,12 +12,14 @@ import {
   faMoon,
   faPenToSquare,
   faSliders,
+  faUserGroup,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useLocations } from '../hooks/useLocations'
 import { apiUpdateOrgName, apiUpdateThreshold } from '../store/api'
 import { getAvatarColors, getInitials } from '../utils/avatar'
+import { version } from '../../package.json'
 import styles from './Settings.module.css'
 
 function getDisplayName(email) {
@@ -352,9 +354,24 @@ export default function Settings() {
               <button
                 type="button"
                 className={styles.navRow}
+                onClick={() => navigate('/members')}
+              >
+                <IconBadge icon={faUserGroup} bg="var(--green-50)" fg="var(--green-600)" />
+                <div className={styles.rowText}>
+                  <span className={styles.rowLabel}>{t('settings.organization.manageMembers')}</span>
+                  <span className={styles.rowDesc}>{t('settings.organization.manageMembersDesc')}</span>
+                </div>
+                <FontAwesomeIcon icon={faChevronRight} className={styles.navChevron} aria-hidden="true" />
+              </button>
+
+              <Divider />
+
+              <button
+                type="button"
+                className={styles.navRow}
                 onClick={() => navigate('/locations', { state: { fromSettings: true } })}
               >
-                <IconBadge icon={faLocationDot} bg="var(--green-50)" fg="var(--green-600)" />
+                <IconBadge icon={faLocationDot} bg="var(--emerald-50)" fg="var(--emerald-500)" />
                 <div className={styles.rowText}>
                   <span className={styles.rowLabel}>{t('settings.organization.manageLocations')}</span>
                   <span className={styles.rowDesc}>{t('settings.organization.manageLocationsDesc')}</span>
@@ -474,7 +491,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <p className={styles.version}>CleanInv v0.2.0 · No backend connected</p>
+        <p className={styles.version}>CleanInv v{version}</p>
 
       </div>
 

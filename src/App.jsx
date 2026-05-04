@@ -15,6 +15,7 @@ import ConnectSheet from './pages/ConnectSheet'
 import Locations from './pages/Locations'
 import EditItem from './pages/EditItem'
 import MembersPage from './pages/MembersPage'
+import ActivityLog from './pages/ActivityLog'
 import JoinPage from './pages/JoinPage'
 
 function App() {
@@ -154,6 +155,7 @@ function App() {
         <Route path="inventory" element={needsLocations ? <Navigate to="/locations" replace /> : <InventoryList />} />
         <Route path="stock-health" element={needsLocations ? <Navigate to="/locations" replace /> : <StockHealth />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="activity-log" element={<ActivityLog />} />
         <Route
           path="members"
           element={

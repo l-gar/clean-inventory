@@ -22,6 +22,20 @@ export function normalizeLocation(l) {
   return { ...l, location_id: String(id), location_name: String(name) }
 }
 
+export function normalizeActivityEntry(raw) {
+  return {
+    ...raw,
+    action:          raw.action          ?? '',
+    item_name:       raw.item_name       ?? raw.itemName       ?? '',
+    quantity_before: raw.quantity_before ?? raw.quantityBefore ?? null,
+    quantity_after:  raw.quantity_after  ?? raw.quantityAfter  ?? null,
+    location_id:     String(raw.location_id ?? raw.locationId ?? ''),
+    performed_by:    raw.performed_by    ?? raw.performedBy    ?? '',
+    role:            raw.role            ?? '',
+    timestamp:       raw.timestamp       ?? '',
+  }
+}
+
 export function normalizeItem(raw) {
   return {
     ...raw,

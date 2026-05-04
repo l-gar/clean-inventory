@@ -9,6 +9,7 @@ import {
   faTriangleExclamation,
   faArrowTrendDown,
   faBolt,
+  faClock,
   faShoppingCart,
   faArrowsRotate,
   faLocationDot,
@@ -156,15 +157,21 @@ function ItemCard({ item, tier, orgThreshold }) {
 
       {hasExtra && (
         <div className={styles.cardMetaExtra}>
-          {tier !== 'out' && health.daysRemaining !== null && (
-            <span className={styles.metaNote}>
-              {t('stock_health.daysLeft', { count: health.daysRemaining })}
-            </span>
-          )}
-          {tier !== 'out' && health.projectedStockoutDate !== null && (
-            <span className={styles.metaNote}>
-              {t('stock_health.runsOut', { date: formatDate(health.projectedStockoutDate, i18n.language) })}
-            </span>
+          {tier !== 'out' && (health.daysRemaining !== null || health.projectedStockoutDate !== null) && (
+            <div className={styles.forecastRow}>
+              <FontAwesomeIcon icon={faClock} className={styles.forecastIcon} aria-hidden="true" />
+              <span className={styles.forecastValue}>
+                {health.daysRemaining !== null && (
+                  <span className={styles.forecastDays}>{t('stock_health.daysLeft', { count: health.daysRemaining })}</span>
+                )}
+                {health.daysRemaining !== null && health.projectedStockoutDate !== null && (
+                  <span className={styles.forecastDot}> • </span>
+                )}
+                {health.projectedStockoutDate !== null && (
+                  <span className={styles.forecastDate}>{formatDate(health.projectedStockoutDate, i18n.language)}</span>
+                )}
+              </span>
+            </div>
           )}
           {/* {health.urgency === 'order_now' && (
             <span className={`${styles.urgencyBadge} ${styles.urgencyOrderNow}`}>

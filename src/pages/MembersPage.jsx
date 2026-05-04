@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,7 +14,8 @@ import {
   faSpinner,
   faCheck,
   faPlus,
-  faStar
+  faStar,
+  faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
@@ -40,6 +42,7 @@ const ROLE_KEYS = {
 
 export default function MembersPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isOwner = user?.role === 'org_owner'
 
@@ -213,6 +216,10 @@ export default function MembersPage() {
     <div className={styles.page}>
 
       <div className={styles.pageHeader}>
+        <button type="button" className={styles.backBtn} onClick={() => navigate('/settings')}>
+          <FontAwesomeIcon icon={faArrowLeft} aria-hidden="true" />
+          {t('back')}
+        </button>
         <div className={styles.headerTop}>
           <div>
             <h1 className={styles.title}>{t('members.title')}</h1>

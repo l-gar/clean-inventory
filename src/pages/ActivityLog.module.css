@@ -1,0 +1,446 @@
+.page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.pageHeader {
+  padding: 14px 16px 12px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────────── */
+.tabBar {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 16px 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabs {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  padding: 5px 13px;
+  border-radius: 99px;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--gray-500);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.tab:active { background: var(--color-page); }
+
+.tabActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Filter button ───────────────────────────────────────────────────────── */
+.filterBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 99px;
+  border: 1.5px solid var(--color-border);
+  background: transparent;
+  color: var(--gray-500);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.filterBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.filterBtnActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.filterBadge {
+  background: #fff;
+  color: var(--accent);
+  border-radius: 99px;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Summary bar ─────────────────────────────────────────────────────────── */
+.summaryBar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 2px;
+  flex-wrap: wrap;
+}
+
+.summaryPill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  letter-spacing: 0.2px;
+}
+
+.summaryPillGreen {
+  background: var(--emerald-50);
+  color: var(--emerald-500);
+}
+
+.summaryPillAmber {
+  background: var(--amber-50);
+  color: var(--amber-600);
+}
+
+.summaryPillGray {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+/* ── Entry list ──────────────────────────────────────────────────────────── */
+.list {
+  flex: 1;
+  padding-bottom: 16px;
+}
+
+/* ── Date group header ───────────────────────────────────────────────────── */
+.dateHeader {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-page);
+  padding: 14px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dateLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.dateCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-300);
+}
+
+/* ── Day card wrapper ────────────────────────────────────────────────────── */
+.dayCard {
+  background: var(--color-surface);
+  border-radius: 12px;
+  margin: 0 16px 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Entry row ───────────────────────────────────────────────────────────── */
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.entry:last-child { border-bottom: none; }
+
+/* ── Action dot ──────────────────────────────────────────────────────────── */
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+.dot_green  { background: var(--emerald-50);  color: var(--emerald-500); }
+.dot_amber  { background: var(--amber-50);    color: var(--amber-600);   }
+.dot_blue   { background: var(--green-50);    color: var(--green-600);   }
+.dot_violet { background: var(--violet-50);   color: var(--violet-600);  }
+.dot_red    { background: var(--red-50);      color: var(--red-600);     }
+.dot_gray   { background: var(--gray-100);    color: var(--gray-500);    }
+
+/* ── Entry body ──────────────────────────────────────────────────────────── */
+.entryBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--gray-700);
+}
+
+.performer {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.verb { color: var(--gray-500); }
+
+.itemName {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.itemNameOrg { font-style: italic; }
+
+/* ── Meta row ────────────────────────────────────────────────────────────── */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.delta {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.deltaPos {
+  background: var(--emerald-50);
+  color: var(--emerald-500);
+}
+
+.deltaNeg {
+  background: var(--amber-50);
+  color: var(--amber-600);
+}
+
+.entryLocation {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.entryLocation svg {
+  width: 10px;
+  height: 10px;
+  color: var(--gray-300);
+}
+
+.timestamp {
+  font-size: 11.5px;
+  color: var(--gray-300);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Load more ───────────────────────────────────────────────────────────── */
+.loadMore {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 8px 16px 16px;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--gray-600);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+
+.loadMore:active { background: var(--color-page); }
+
+/* ── Filter sheet ────────────────────────────────────────────────────────── */
+.filterBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  backdrop-filter: blur(2px);
+}
+
+.filterSheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-radius: 20px 20px 0 0;
+  z-index: 101;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.filterHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-200);
+  margin: 12px auto 8px;
+}
+
+.filterTitleRow {
+  padding: 4px 16px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filterTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.filterBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.filterSectionLabel {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.filterPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.filterPill {
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--gray-500);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.12s;
+}
+
+.filterPill:active { background: var(--color-page); }
+
+.filterTimeRow {
+  display: flex;
+  gap: 7px;
+}
+
+.filterTimePill {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--gray-500);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.12s;
+}
+
+.filterTimePill:active { background: var(--color-page); }
+
+/* Must come after filterPill and filterTimePill to win the cascade */
+.filterPillActive {
+  border-color: var(--green-200);
+  background: var(--green-50);
+  color: var(--green-700);
+}
+
+.filterApply {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+
+.filterApply:active { background: var(--accent-hover); }

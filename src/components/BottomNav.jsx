@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -6,8 +6,8 @@ import {
   faBarcode,
   faGear,
   faHeartPulse,
+  faClockRotateLeft,
   faShieldHalved,
-  faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import styles from './BottomNav.module.css'
@@ -30,10 +30,9 @@ const NAV_ITEMS = [
     ownerManagerOnly: true,
   },
   {
-    to: '/members',
-    labelKey: 'nav.members',
-    icon: <FontAwesomeIcon icon={faUserGroup} aria-hidden="true" />,
-    ownerManagerOnly: true,
+    to: '/activity-log',
+    labelKey: 'nav.activity_log',
+    icon: <FontAwesomeIcon icon={faClockRotateLeft} aria-hidden="true" />,
   },
   {
     to: '/settings',
@@ -42,9 +41,13 @@ const NAV_ITEMS = [
   },
 ]
 
+// Routes that live under Settings and should keep it highlighted
+const SETTINGS_SUBROUTES = new Set(['/members'])
+
 export default function BottomNav() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { pathname } = useLocation()
   const isSuperAdmin = user?.role === 'super_admin'
   const isOwnerOrManager = user?.role === 'org_owner' || user?.role === 'manager'
 
@@ -62,7 +65,7 @@ export default function BottomNav() {
           key={to}
           to={to}
           className={({ isActive }) =>
-            `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+            `${styles.navItem} ${isActive || (to === '/settings' && SETTINGS_SUBROUTES.has(pathname)) ? styles.navItemActive : ''}`
           }
         >
           <span className={styles.navIcon}>
