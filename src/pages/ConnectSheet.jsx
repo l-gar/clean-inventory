@@ -27,13 +27,14 @@ const CATALOG_HEADER_ROW = [
   'catalog_id', 'org_id', 'item_name', 'brand', 'barcode', 'sku', 'description',
   'unit', 'category', 'supplier', 'cost_per_unit', 'reorder_point',
   'reorder_quantity', 'track_stock', 'added_by', 'added_date',
-  'last_updated_by', 'last_updated_date',
+  'last_updated_by', 'last_updated_date', 'target_quantity', 'restock_cycle_days',
 ]
 
 const INVENTORY_HEADER_ROW = [
   'stock_id', 'catalog_id', 'location_id', 'quantity', 'cost_per_unit_override',
   'item_low_stock_threshold', 'expected_jobs', 'last_restocked_date',
   'added_by', 'added_date', 'last_updated_by', 'last_updated_date',
+  'target_quantity_override', 'restock_cycle_days_override',
 ]
 
 const TRANSACTIONS_HEADER_ROW = [

@@ -7,11 +7,13 @@ import {
   faUserPlus,
   faCircleUser,
   faLink,
+  faCopy,
   faTrashCan,
   faLocationDot,
   faSpinner,
   faCheck,
   faPlus,
+  faStar
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
@@ -27,6 +29,7 @@ import ErrorState from '../components/ErrorState'
 import EmptyState from '../components/EmptyState'
 import ConfirmBlock from '../components/ConfirmBlock'
 import { formatDate } from '../utils/date'
+import { getAvatarColors, getInitials } from '../utils/avatar'
 import styles from './MembersPage.module.css'
 
 const ROLE_KEYS = {
@@ -78,6 +81,15 @@ export default function MembersPage() {
   const [generateError, setGenerateError] = useState(null)
 
   const [copiedToken, setCopiedToken] = useState(null)
+  const [expandedMembers, setExpandedMembers] = useState(new Set())
+
+  function toggleMemberExpand(email) {
+    setExpandedMembers(prev => {
+      const s = new Set(prev)
+      s.has(email) ? s.delete(email) : s.add(email)
+      return s
+    })
+  }
 
   useEffect(() => {
     fetchMembers(user.email, user.orgId).catch(() => {})
@@ -201,34 +213,40 @@ export default function MembersPage() {
     <div className={styles.page}>
 
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('members.title')}</h1>
-      </div>
-
-      <div className={styles.tabBar} role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === 'team'}
-          className={`${styles.tab} ${tab === 'team' ? styles.tabActive : ''}`}
-          onClick={() => setTab('team')}
-        >
-          <FontAwesomeIcon icon={faUserGroup} aria-hidden="true" />
-          {t('members.tab_team')}
-          {members.length > 0 && (
-            <span className={styles.tabBadge}>{members.length}</span>
-          )}
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === 'invites'}
-          className={`${styles.tab} ${tab === 'invites' ? styles.tabActive : ''}`}
-          onClick={() => setTab('invites')}
-        >
-          <FontAwesomeIcon icon={faUserPlus} aria-hidden="true" />
-          {t('members.tab_invites')}
-          {invites.length > 0 && (
-            <span className={styles.tabBadge}>{invites.length}</span>
-          )}
-        </button>
+        <div className={styles.headerTop}>
+          <div>
+            <h1 className={styles.title}>{t('members.title')}</h1>
+            <p className={styles.subtitle}>
+              {t('members.subtitle', { memberCount: members.length, inviteCount: invites.length })}
+            </p>
+          </div>
+        </div>
+        <div className={styles.tabBar} role="tablist">
+          <button
+            role="tab"
+            aria-selected={tab === 'team'}
+            className={`${styles.tab} ${tab === 'team' ? styles.tabActive : ''}`}
+            onClick={() => setTab('team')}
+          >
+            <FontAwesomeIcon icon={faUserGroup} aria-hidden="true" />
+            {t('members.tab_team')}
+            {members.length > 0 && (
+              <span className={styles.tabBadge}>{members.length}</span>
+            )}
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'invites'}
+            className={`${styles.tab} ${tab === 'invites' ? styles.tabActive : ''}`}
+            onClick={() => setTab('invites')}
+          >
+            <FontAwesomeIcon icon={faUserPlus} aria-hidden="true" />
+            {t('members.tab_invites')}
+            {invites.length > 0 && (
+              <span className={styles.tabBadge}>{invites.length}</span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── Team tab ──────────────────────────────────────────────────────── */}
@@ -246,36 +264,81 @@ export default function MembersPage() {
             <EmptyState icon={faUserGroup} title={t('members.empty_team')} />
           ) : (
             <ul className={styles.list}>
-              {members.map(member => (
+              {members.map(member => {
+                const avatarColors = getAvatarColors(member.email)
+                const showLocs = member.role !== 'org_owner'
+                const assigned = showLocs
+                  ? (member.locationIds ?? [])
+                      .map(id => locations.find(l => (l.location_id ?? l.locationId) === id))
+                      .filter(Boolean)
+                  : []
+                const isExpanded = expandedMembers.has(member.email)
+                const visibleLocs = isExpanded ? assigned : assigned.slice(0, 2)
+                const locOverflow = assigned.length - 2
+                return (
                 <li key={member.email} className={styles.card}>
                   {confirmRemove === member.email ? (
-                    <ConfirmBlock
-                      message={t('members.remove_confirm', { email: member.email })}
-                      confirmLabel={t('members.remove_confirm_yes')}
-                      cancelLabel={t('members.remove_confirm_no')}
-                      onConfirm={() => handleRemoveMember(member.email)}
-                      onCancel={() => { setConfirmRemove(null); setRemoveError(null) }}
-                      busy={removing}
-                      error={removeError}
-                    />
+                    <div className={styles.cardConfirmWrap}>
+                      <ConfirmBlock
+                        message={t('members.remove_confirm', { email: member.email })}
+                        confirmLabel={t('members.remove_confirm_yes')}
+                        cancelLabel={t('members.remove_confirm_no')}
+                        onConfirm={() => handleRemoveMember(member.email)}
+                        onCancel={() => { setConfirmRemove(null); setRemoveError(null) }}
+                        busy={removing}
+                        error={removeError}
+                      />
+                    </div>
                   ) : (
                     <>
                       <div className={styles.memberLeft}>
-                        <span className={styles.memberIcon}>
-                          <FontAwesomeIcon icon={faCircleUser} aria-hidden="true" />
-                        </span>
+                        <div
+                          className={styles.memberAvatar}
+                          style={avatarColors}
+                          aria-hidden="true"
+                        >
+                          {getInitials(member.email)}
+                        </div>
                         <div className={styles.memberInfo}>
-                          <span className={styles.memberEmail}>{member.email}</span>
-                          <div className={styles.memberMeta}>
+                          <div className={styles.memberTopRow}>
+                            <span className={styles.memberEmail}>{member.email}</span>
                             <span className={`${styles.roleBadge} ${styles[`role_${member.role}`] ?? ''}`}>
                               {t(ROLE_KEYS[member.role] ?? 'members.role_org_member')}
                             </span>
-                            {member.joinedDate && (
-                              <span className={styles.joinedDate}>
-                                {t('members.joined', { date: formatDate(member.joinedDate, i18n.language) })}
-                              </span>
-                            )}
                           </div>
+                          {member.joinedDate && (
+                            <span className={styles.joinedDate}>
+                              {t('members.joined', { date: formatDate(member.joinedDate, i18n.language) })}
+                            </span>
+                          )}
+                          {assigned.length > 0 && (
+                            <div className={styles.locationChips}>
+                              {visibleLocs.map(loc => (
+                                <span key={loc.location_id ?? loc.locationId} className={styles.locationChip}>
+                                  <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+                                  <span>{loc.location_name ?? loc.locationName}</span>
+                                </span>
+                              ))}
+                              {!isExpanded && locOverflow > 0 && (
+                                <button
+                                  type="button"
+                                  className={styles.chipMoreBtn}
+                                  onClick={() => toggleMemberExpand(member.email)}
+                                >
+                                  +{locOverflow} {t('members.more')}
+                                </button>
+                              )}
+                              {isExpanded && (
+                                <button
+                                  type="button"
+                                  className={styles.chipMoreBtn}
+                                  onClick={() => toggleMemberExpand(member.email)}
+                                >
+                                  {t('members.less')}
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className={styles.memberActions}>
@@ -305,7 +368,8 @@ export default function MembersPage() {
                     </>
                   )}
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </div>
@@ -316,21 +380,29 @@ export default function MembersPage() {
         <div className={styles.tabContent}>
 
           <div className={styles.generateSection}>
-            <h2 className={styles.sectionLabel}>{t('members.new_invite')}</h2>
+            <div className={styles.generateHeader}>
+              <div className={styles.generateIconBox}>
+                <FontAwesomeIcon icon={faStar} aria-hidden="true" />
+              </div>
+              <div>
+                <p className={styles.generateTitle}>{t('members.new_invite')}</p>
+                <p className={styles.generateExpiry}>{t('members.invite_expires')}</p>
+              </div>
+            </div>
             {isOwner && (
               <div className={styles.roleField}>
                 <span className={styles.roleLabel}>{t('members.invite_role_label')}</span>
-                <div className={styles.roleToggle} role="group" aria-label={t('members.invite_role_label')}>
+                <div className={styles.roleGrid} role="group" aria-label={t('members.invite_role_label')}>
                   <button
                     type="button"
-                    className={`${styles.roleToggleBtn} ${inviteRole === 'org_member' ? styles.roleToggleBtnActive : ''}`}
+                    className={`${styles.roleGridBtn} ${inviteRole === 'org_member' ? styles.roleGridBtnActive : ''}`}
                     onClick={() => setInviteRole('org_member')}
                   >
                     {t('members.invite_role_member')}
                   </button>
                   <button
                     type="button"
-                    className={`${styles.roleToggleBtn} ${inviteRole === 'manager' ? styles.roleToggleBtnActive : ''}`}
+                    className={`${styles.roleGridBtn} ${inviteRole === 'manager' ? styles.roleGridBtnActive : ''}`}
                     onClick={() => setInviteRole('manager')}
                   >
                     {t('members.invite_role_manager')}
@@ -366,9 +438,18 @@ export default function MembersPage() {
               hint={t('members.empty_invites_hint')}
             />
           ) : (
+            <>
+              <p className={styles.listSectionLabel}>{t('members.active_links')}</p>
             <ul className={styles.list}>
-              {invites.map(invite => (
-                <li key={invite.token} className={styles.card}>
+              {invites.map(invite => {
+                const isExpired = invite.expiresDate && new Date(invite.expiresDate) < new Date()
+                const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+                const progress = invite.expiresDate
+                  ? Math.min(1, Math.max(0, 1 - (new Date(invite.expiresDate) - Date.now()) / SEVEN_DAYS_MS))
+                  : 0
+                const barColor = isExpired || progress >= 0.8 ? '#ef4444' : progress >= 0.5 ? '#f59e0b' : 'var(--green-500)'
+                return (
+                <li key={invite.token} className={styles.inviteCard}>
                   {confirmRevoke === invite.token ? (
                     <ConfirmBlock
                       message={t('members.revoke_confirm')}
@@ -381,39 +462,49 @@ export default function MembersPage() {
                     />
                   ) : (
                     <>
-                      <div className={styles.inviteInfo}>
-                        <div className={styles.inviteTokenRow}>
-                          <span className={styles.inviteToken}>{invite.token.slice(0, 10)}…</span>
-                          <span className={`${styles.roleBadge} ${styles[`role_${invite.role ?? 'org_member'}`] ?? ''}`}>
-                            {t(ROLE_KEYS[invite.role] ?? 'members.role_org_member')}
-                          </span>
+                      {invite.expiresDate && !isExpired && (
+                        <div className={styles.progressWrap}>
+                          <div className={styles.progressBar}>
+                            <div className={styles.progressFill} style={{ width: `${progress * 100}%`, background: barColor }} />
+                          </div>
                         </div>
-                        <div className={styles.inviteMeta}>
-                          {invite.expiresDate && (
-                            <span className={styles.inviteExpiry}>
-                              {t('members.expires', { date: formatDate(invite.expiresDate, i18n.language) })}
+                      )}
+                      <div className={styles.inviteCardTop}>
+                        <div className={styles.inviteIconBox}>
+                          <FontAwesomeIcon icon={faLink} aria-hidden="true" />
+                        </div>
+                        <div className={styles.inviteCardInfo}>
+                          <div className={styles.inviteTokenRow}>
+                            <span className={styles.inviteToken}>{invite.token.slice(0, 10)}…</span>
+                            <span className={`${styles.roleBadge} ${styles[`role_${invite.role ?? 'org_member'}`] ?? ''}`}>
+                              {t(ROLE_KEYS[invite.role] ?? 'members.role_org_member')}
                             </span>
-                          )}
-                          {invite.createdBy && (
-                            <span className={styles.inviteCreatedBy}>
-                              {t('members.created_by', { email: invite.createdBy })}
-                            </span>
-                          )}
+                          </div>
+                          <div className={styles.inviteMetaRow}>
+                            {isExpired && (
+                              <span className={styles.expiredBadge}>{t('members.expired')}</span>
+                            )}
+                            {invite.createdBy && (
+                              <span className={styles.inviteCreatedBy}>
+                                {t('members.created_by', { email: invite.createdBy })}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className={styles.inviteActions}>
+                      <div className={styles.inviteCardActions}>
                         <button
                           type="button"
                           className={`${styles.copyBtn} ${copiedToken === invite.token ? styles.copyBtnSuccess : ''}`}
                           onClick={() => copyInviteLink(invite.token)}
                           aria-label={t('members.copy_link')}
                         >
-                          <FontAwesomeIcon icon={faLink} aria-hidden="true" />
+                          <FontAwesomeIcon icon={faCopy} aria-hidden="true" />
                           <span>{copiedToken === invite.token ? t('members.copied') : t('members.copy_link')}</span>
                         </button>
                         <button
                           type="button"
-                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                          className={styles.inviteDeleteBtn}
                           onClick={() => { setConfirmRevoke(invite.token); setRevokeError(null) }}
                           aria-label={t('members.revoke')}
                           title={t('members.revoke')}
@@ -424,8 +515,10 @@ export default function MembersPage() {
                     </>
                   )}
                 </li>
-              ))}
+                )
+              })}
             </ul>
+            </>
           )}
         </div>
       )}

@@ -17,17 +17,8 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useLocations } from '../hooks/useLocations'
 import { apiUpdateOrgName, apiUpdateThreshold } from '../store/api'
+import { getAvatarColors, getInitials } from '../utils/avatar'
 import styles from './Settings.module.css'
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function getInitials(email) {
-  const local = (email ?? '').split('@')[0]
-  const parts = local.split(/[._+]/).filter(Boolean)
-  if (!parts.length) return '?'
-  if (parts.length === 1) return parts[0][0].toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
 
 function getDisplayName(email) {
   const local = (email ?? '').split('@')[0]
@@ -246,7 +237,7 @@ export default function Settings() {
       {/* Profile header */}
       <div className={styles.profileCard}>
         <div className={styles.profileRow}>
-          <div className={styles.avatar}>{getInitials(user?.email)}</div>
+          <div className={styles.avatar} style={getAvatarColors(user?.email ?? '')}>{getInitials(user?.email)}</div>
           <div className={styles.profileInfo}>
             <div className={styles.profileName}>{getDisplayName(user?.email)}</div>
             <div className={styles.profileEmail}>{user?.email}</div>

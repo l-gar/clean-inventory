@@ -155,11 +155,17 @@ export default function InventoryList() {
     ? `cleaninv_default_location_${user.email}`
     : null
 
+  // Per-user sessionStorage key that tracks the last-viewed location so the
+  // user returns to the same tab after navigating away (e.g. editing an item).
+  const lastLocKey = user?.email
+    ? `cleaninv_last_location_${user.email}`
+    : null
+
   // Compute the initial location ID once — used for both selectedLocationId and
   // the sessionStorage seed so both start from the same value without running
   // the derivation twice.
   // org_member  → first assigned location (no filter UI shown)
-  // org_owner / manager → saved preference from localStorage, or 'all'
+  // org_owner / manager → last-viewed session location → saved default → 'all'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialLocationId = useMemo(() => {
     if (isMember) {
@@ -167,6 +173,10 @@ export default function InventoryList() {
       if (assigned.length > 0) {
         return assigned[0].location_id || 'all'
       }
+    }
+    if (lastLocKey) {
+      const lastLoc = sessionStorage.getItem(lastLocKey)
+      if (lastLoc) return lastLoc
     }
     if (defaultLocKey) {
       const saved = localStorage.getItem(defaultLocKey)
@@ -177,6 +187,12 @@ export default function InventoryList() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedLocationId, setSelectedLocationId] = useState(initialLocationId)
+
+  // Keep the last-viewed location in sessionStorage so the user is returned to
+  // the same tab when they navigate back from EditItem or other detail pages.
+  useEffect(() => {
+    if (!isMember && lastLocKey) sessionStorage.setItem(lastLocKey, selectedLocationId)
+  }, [selectedLocationId, lastLocKey, isMember])
 
   // ── Inventory data state ──────────────────────────────────────────────────
   // Seed items from sessionStorage on page load so the list renders immediately

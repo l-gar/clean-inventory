@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -7,10 +8,17 @@ import {
   faCircleExclamation,
   faTriangleExclamation,
   faArrowTrendDown,
+  faBolt,
+  faShoppingCart,
+  faArrowsRotate,
+  faLocationDot,
+  faChevronDown,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { normalizeItem } from '../domain/normalize'
+import { computeStockHealth } from '../utils/stockHealth'
+import { formatDate } from '../utils/date'
 import LoadingScreen from '../components/LoadingScreen'
 import InlineLoader from '../components/InlineLoader'
 import ErrorState from '../components/ErrorState'
@@ -33,9 +41,14 @@ function readSessionLocations(email) {
   } catch { return null }
 }
 
-function effectiveThreshold(item, orgThreshold) {
-  const t = Number(item.lowStockThreshold ?? 0)
-  return t > 0 ? t : Number(orgThreshold ?? 0)
+function effectiveThreshold(item, orgThresholdPct) {
+  const itemThreshold = Number(item.lowStockThreshold ?? 0)
+  if (itemThreshold > 0) return itemThreshold
+  const pct = Number(orgThresholdPct ?? 0)
+  if (pct <= 0) return 0
+  // orgThresholdPct is a percentage; apply to resolved target qty, default 100
+  const targetQty = Number(item.resolvedTargetQty ?? item.targetQuantity ?? 0) || 100
+  return Math.round(pct / 100 * targetQty)
 }
 
 function classifyItem(item, orgThreshold) {
@@ -48,54 +61,122 @@ function classifyItem(item, orgThreshold) {
   return null
 }
 
-function Section({ tier, items, icon, label, orgThreshold, t }) {
+function Section({ tier, items, icon, label, orgThreshold, collapsed, onToggle }) {
   return (
     <div className={styles.section}>
-      <div className={`${styles.sectionHeader} ${styles[`tier_${tier}`]}`}>
-        <FontAwesomeIcon icon={icon} aria-hidden="true" />
-        <span>{label}</span>
-        <span className={styles.sectionCount}>{items.length}</span>
-      </div>
-      {items.map((item) => (
+      <button
+        type="button"
+        className={`${styles.sectionHeader} ${styles[`tier_${tier}`]}`}
+        onClick={onToggle}
+        aria-expanded={!collapsed}
+      >
+        <span className={`${styles.sectionIconBox} ${styles[`iconBox_${tier}`]}`}>
+          <FontAwesomeIcon icon={icon} aria-hidden="true" />
+        </span>
+        <span className={styles.sectionLabel}>{label}</span>
+        <span className={`${styles.sectionBadge} ${styles[`badge_${tier}`]}`}>{items.length}</span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`${styles.chevron}${collapsed ? ` ${styles.chevronCollapsed}` : ''}`}
+          aria-hidden="true"
+        />
+      </button>
+      {!collapsed && items.map((item) => (
         <ItemCard
           key={`${item.itemId}_${item.location_id}`}
           item={item}
           tier={tier}
           orgThreshold={orgThreshold}
-          t={t}
         />
       ))}
     </div>
   )
 }
 
-function ItemCard({ item, tier, orgThreshold, t }) {
+function ItemCard({ item, tier, orgThreshold }) {
+  const { t, i18n } = useTranslation()
   const qty = Number(item.quantity)
   const threshold = effectiveThreshold(item, orgThreshold)
   const rp = Number(item.reorder_point ?? 0)
   const getLocationName = useStore((s) => s.getLocationName)
   const locationName = getLocationName(item.location_id, item.location_name)
+  const health = computeStockHealth(item)
+  const hasExtra = health.daysRemaining !== null || health.projectedStockoutDate !== null || health.urgency
 
   return (
     <div className={`${styles.itemCard} ${styles[`card_${tier}`]}`}>
       <div className={styles.cardTop}>
         <div className={styles.cardNameGroup}>
-          <span className={styles.itemName}>{item.itemName}</span>
+          <p className={styles.itemName}>{item.itemName}</p>
           {locationName && (
-            <span className={styles.locationLabel}>{locationName}</span>
+            <div className={styles.locationRow}>
+              <FontAwesomeIcon icon={faLocationDot} className={styles.pinIcon} aria-hidden="true" />
+              <span className={styles.locationLabel}>{locationName}</span>
+            </div>
           )}
         </div>
-        <span className={`${styles.qtyChip} ${styles[`chip_${tier}`]}`}>
-          {qty}{item.unit ? ` ${item.unit}` : ''}
-        </span>
-      </div>
-      {((tier === 'low' && threshold > 0) || (tier === 'reorder' && rp > 0)) && (
-        <div className={styles.cardMeta}>
-          {tier === 'low' && threshold > 0 && (
-            <span className={styles.metaNote}>{t('stock_health.alertBelow')} {threshold}</span>
+        <div className={styles.qtyCol}>
+          <span className={`${styles.qtyChip} ${styles[`chip_${tier}`]}`}>
+            {qty}{item.unit ? ` ${item.unit}` : ''}
+          </span>
+          {item.resolvedTargetQty && (
+            <span className={styles.qtySubLabel}>{qty}/{Number(item.resolvedTargetQty)}</span>
           )}
-          {tier === 'reorder' && rp > 0 && (
-            <span className={styles.metaNote}>{t('stock_health.reorderAt')} {rp}</span>
+        </div>
+      </div>
+
+      {health.healthPct !== null && (
+        <div className={styles.healthBar}>
+          <div
+            className={`${styles.healthFill} ${styles[`healthFill_${tier}`]}`}
+            style={{ width: `${Math.round(health.healthPct * 100)}%` }}
+          />
+          {threshold > 0 && (
+            <div className={styles.tickAlert} style={{ left: `${Math.min(Math.round(threshold / Number(item.resolvedTargetQty) * 100), 100)}%` }} />
+          )}
+          {rp > 0 && (
+            <div className={styles.tickReorder} style={{ left: `${Math.min(Math.round(rp / Number(item.resolvedTargetQty) * 100), 100)}%` }} />
+          )}
+        </div>
+      )}
+
+      <div className={styles.cardMeta}>
+        {(tier === 'low' || tier === 'out') && threshold > 0 && (
+          <span className={styles.metaNote}>{t('stock_health.alertBelow')} {threshold}</span>
+        )}
+        {(tier === 'reorder' || tier === 'low' || tier === 'out') && rp > 0 && (
+          <span className={styles.metaNote}>{t('stock_health.reorderAt')} {rp}</span>
+        )}
+        {health.healthPct !== null && (
+          <span className={`${styles.metaPct} ${styles[`pct_${tier}`]}`}>
+            {t('stock_health.healthPct', { pct: Math.round(health.healthPct * 100) })}
+          </span>
+        )}
+      </div>
+
+      {hasExtra && (
+        <div className={styles.cardMetaExtra}>
+          {tier !== 'out' && health.daysRemaining !== null && (
+            <span className={styles.metaNote}>
+              {t('stock_health.daysLeft', { count: health.daysRemaining })}
+            </span>
+          )}
+          {tier !== 'out' && health.projectedStockoutDate !== null && (
+            <span className={styles.metaNote}>
+              {t('stock_health.runsOut', { date: formatDate(health.projectedStockoutDate, i18n.language) })}
+            </span>
+          )}
+          {/* {health.urgency === 'order_now' && (
+            <span className={`${styles.urgencyBadge} ${styles.urgencyOrderNow}`}>
+              <FontAwesomeIcon icon={faBolt} aria-hidden="true" />
+              {t('stock_health.orderNow')}
+            </span>
+          )} */}
+          {health.urgency === 'order_soon' && (
+            <span className={`${styles.urgencyBadge} ${styles.urgencyOrderSoon}`}>
+              <FontAwesomeIcon icon={faShoppingCart} aria-hidden="true" />
+              {t('stock_health.orderSoon')}
+            </span>
           )}
         </div>
       )}
@@ -106,6 +187,10 @@ function ItemCard({ item, tier, orgThreshold, t }) {
 export default function StockHealth() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (user?.role === 'org_member') navigate('/inventory', { replace: true })
+  }, [user, navigate])
 
   const fetchInventory      = useStore((s) => s.fetchInventory)
   const storeInventory      = useStore((s) => s.inventory)
@@ -118,9 +203,9 @@ export default function StockHealth() {
   const storeLocations      = useStore((s) => s.locations)
   const locationsLoading    = useStore((s) => s.locationsLoading)
 
-  // Stale-first: seed from sessionStorage so content renders on first paint
-  const [items, setItems]               = useState(() => readSessionInventory(user?.email) ?? [])
-  const [localLocations, setLocalLocs]  = useState(() => readSessionLocations(user?.email) ?? [])
+  const [items, setItems]              = useState(() => readSessionInventory(user?.email) ?? [])
+  const [localLocations, setLocalLocs] = useState(() => readSessionLocations(user?.email) ?? [])
+  const [collapsed, setCollapsed]      = useState({})
 
   useEffect(() => {
     if (!user) return
@@ -133,7 +218,6 @@ export default function StockHealth() {
     await fetchInventory(user.email, user.orgId, 'all').catch(() => {})
   }, [invalidateInventory, fetchInventory, user.email, user.orgId]))
 
-  // Sync store → local once fresh data arrives
   useEffect(() => {
     if (inventoryLoading) return
     if (inventoryLocationId !== 'all') return
@@ -150,7 +234,6 @@ export default function StockHealth() {
   const orgThreshold = Number(user?.lowStockThreshold ?? user?.low_stock_threshold ?? 0)
 
   const hasStaleData = items.length > 0 || localLocations.length > 0
-  // Show full-screen loader only when there is truly nothing to display yet
   const isFirstLoad  = !hasStaleData && !inventoryFetched
   if (isFirstLoad) return <LoadingScreen />
 
@@ -166,7 +249,6 @@ export default function StockHealth() {
     for (const raw of items) {
       const item = normalizeItem(raw)
       if (!item.track_stock) continue
-      // Only filter by location once locations have loaded; empty set means still loading
       if (accessibleIds.size > 0 && !accessibleIds.has(item.location_id)) continue
 
       const tier = classifyItem(item, orgThreshold)
@@ -177,13 +259,67 @@ export default function StockHealth() {
     return { out, low, reorder }
   }, [items, accessibleIds, orgThreshold])
 
+  const isOwner = user?.role === 'org_owner'
+
+  const cashFlowEstimate = useMemo(() => {
+    if (!isOwner) return null
+    let total = 0
+    let hasAny = false
+    for (const raw of items) {
+      const item = normalizeItem(raw)
+      const { daysRemaining, reorderCost } = computeStockHealth(item)
+      if (daysRemaining !== null && daysRemaining <= 14 && reorderCost !== null) {
+        total += reorderCost
+        hasAny = true
+      }
+    }
+    return hasAny ? total : null
+  }, [items, isOwner])
+
   const totalFlagged = flagged.out.length + flagged.low.length + flagged.reorder.length
+  const toggleSection = (tier) => setCollapsed(prev => ({ ...prev, [tier]: !prev[tier] }))
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.title}>{t('stock_health.title')}</h1>
-        <p className={styles.subtitle}>{t('stock_health.subtitle')}</p>
+        <div className={styles.pageHeaderRow}>
+          <div>
+            <h1 className={styles.title}>{t('stock_health.title')}</h1>
+            <p className={styles.subtitle}>{t('stock_health.subtitle')}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.refreshBtn}
+            onClick={() => { invalidateInventory(); fetchInventory(user.email, user.orgId, 'all').catch(() => {}) }}
+          >
+            <FontAwesomeIcon icon={faArrowsRotate} aria-hidden="true" />
+            {t('inventory.refresh')}
+          </button>
+        </div>
+
+        <div className={styles.summary}>
+          <div className={`${styles.summaryCard} ${styles.summaryOut}`}>
+            <span className={styles.summaryNum}>{flagged.out.length}</span>
+            <span className={styles.summaryLabel}>{t('stock_health.outOfStock')}</span>
+            <div className={styles.summaryBar}>
+              <div className={`${styles.summaryBarFill} ${styles.summaryBarOut}`} style={{ width: totalFlagged > 0 ? `${Math.round(flagged.out.length / totalFlagged * 100)}%` : '0%' }} />
+            </div>
+          </div>
+          <div className={`${styles.summaryCard} ${styles.summaryLow}`}>
+            <span className={styles.summaryNum}>{flagged.low.length}</span>
+            <span className={styles.summaryLabel}>{t('stock_health.lowStock')}</span>
+            <div className={styles.summaryBar}>
+              <div className={`${styles.summaryBarFill} ${styles.summaryBarLow}`} style={{ width: totalFlagged > 0 ? `${Math.round(flagged.low.length / totalFlagged * 100)}%` : '0%' }} />
+            </div>
+          </div>
+          <div className={`${styles.summaryCard} ${styles.summaryReorder}`}>
+            <span className={styles.summaryNum}>{flagged.reorder.length}</span>
+            <span className={styles.summaryLabel}>{t('stock_health.belowReorder')}</span>
+            <div className={styles.summaryBar}>
+              <div className={`${styles.summaryBarFill} ${styles.summaryBarReorder}`} style={{ width: totalFlagged > 0 ? `${Math.round(flagged.reorder.length / totalFlagged * 100)}%` : '0%' }} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {isRefreshing && <InlineLoader />}
@@ -197,20 +333,14 @@ export default function StockHealth() {
         />
       )}
 
-      <div className={styles.summary}>
-        <div className={`${styles.summaryCard} ${styles.summaryOut}`}>
-          <span className={styles.summaryNum}>{flagged.out.length}</span>
-          <span className={styles.summaryLabel}>{t('stock_health.outOfStock')}</span>
+      {cashFlowEstimate !== null && (
+        <div className={styles.cashFlowPanel}>
+          <span className={styles.cashFlowLabel}>{t('stock_health.cashFlow')}</span>
+          <div className={styles.cashFlowAmount}>
+            ${cashFlowEstimate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
         </div>
-        <div className={`${styles.summaryCard} ${styles.summaryLow}`}>
-          <span className={styles.summaryNum}>{flagged.low.length}</span>
-          <span className={styles.summaryLabel}>{t('stock_health.lowStock')}</span>
-        </div>
-        <div className={`${styles.summaryCard} ${styles.summaryReorder}`}>
-          <span className={styles.summaryNum}>{flagged.reorder.length}</span>
-          <span className={styles.summaryLabel}>{t('stock_health.belowReorder')}</span>
-        </div>
-      </div>
+      )}
 
       {totalFlagged === 0 && !inventoryLoading ? (
         <EmptyState
@@ -228,7 +358,8 @@ export default function StockHealth() {
               icon={faCircleExclamation}
               label={t('stock_health.outOfStock')}
               orgThreshold={orgThreshold}
-              t={t}
+              collapsed={!!collapsed.out}
+              onToggle={() => toggleSection('out')}
             />
           )}
           {flagged.low.length > 0 && (
@@ -238,7 +369,8 @@ export default function StockHealth() {
               icon={faTriangleExclamation}
               label={t('stock_health.lowStock')}
               orgThreshold={orgThreshold}
-              t={t}
+              collapsed={!!collapsed.low}
+              onToggle={() => toggleSection('low')}
             />
           )}
           {flagged.reorder.length > 0 && (
@@ -248,7 +380,8 @@ export default function StockHealth() {
               icon={faArrowTrendDown}
               label={t('stock_health.belowReorder')}
               orgThreshold={orgThreshold}
-              t={t}
+              collapsed={!!collapsed.reorder}
+              onToggle={() => toggleSection('reorder')}
             />
           )}
         </div>

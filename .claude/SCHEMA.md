@@ -27,20 +27,22 @@ upc | item_name | brand | description | cached_date
 ## Org Inventory Sheet (org owner's Google account)
 
 ### item_catalog
-catalog_id | org_id | item_name | brand | barcode | sku | description | unit | category | supplier | cost_per_unit | reorder_point | 
-reorder_quantity | track_stock | added_by | added_date | 
-last_updated_by | last_updated_date
+catalog_id | org_id | item_name | brand | barcode | sku | description | unit | category | supplier | cost_per_unit | reorder_point | reorder_quantity | track_stock | added_by | added_date | last_updated_by | last_updated_date | target_quantity | restock_cycle_days
 
 - One row per unique item definition
 - `cost_per_unit` is the org-wide default cost
 - Barcode lives here, not on the stock record
+- `target_quantity` is the org-wide default max quantity for this item — used as the 100% reference point for stock health bars. Nullable — if not set, item displays badge-only, no health bar
+- `restock_cycle_days` is how many days a full stock of this item typically lasts under normal usage. Combined with `target_quantity` to derive daily consumption rate and projected stockout date. Nullable
 
 ### inventory
-stock_id | catalog_id | location_id | quantity | cost_per_unit_override | item_low_stock_threshold | expected_jobs | last_restocked_date | added_by | added_date | last_updated_by | last_updated_date
+stock_id | catalog_id | location_id | quantity | cost_per_unit_override | item_low_stock_threshold | expected_jobs | last_restocked_date | added_by | added_date | last_updated_by | last_updated_date | target_quantity_override | restock_cycle_days_override
 
 - One row per catalog item × location combination
 - Duplicate catalog_id + location_id is not allowed
 - `cost_per_unit_override` is nullable — null means use catalog default
+- `target_quantity_override` is nullable — null means use catalog `target_quantity`
+- `restock_cycle_days_override` is nullable — null means use catalog `restock_cycle_days`
 - quantity is NEVER updated directly — only through dedicated functions
 
 ### stock_transactions

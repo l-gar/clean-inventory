@@ -102,7 +102,7 @@ export default function AddItem() {
     setForm((prev) => {
       if (prev.location || locations.length === 0) return prev
       if (isMember && locations.length !== 1) return prev
-      return { ...prev, location: locations[0].location_id }
+      return { ...prev, location: getDefaultLocation() }
     })
   }, [isMember, locations])
 
@@ -110,7 +110,7 @@ export default function AddItem() {
     setLookupLocation((prev) => {
       if (prev || locations.length === 0) return prev
       if (isMember && locations.length !== 1) return prev
-      return locations[0].location_id
+      return getDefaultLocation()
     })
   }, [isMember, locations])
 
@@ -128,7 +128,9 @@ export default function AddItem() {
   function getDefaultLocation() {
     if (locations.length === 0) return ''
     if (isMember && locations.length !== 1) return ''
-    return locations[0].location_id
+    const saved = user?.email ? localStorage.getItem(`cleaninv_default_location_${user.email}`) : null
+    const isValid = saved && locations.some((l) => l.location_id === saved)
+    return isValid ? saved : locations[0].location_id
   }
 
   function handleLookupLocationChange(e) {

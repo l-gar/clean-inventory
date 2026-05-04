@@ -4,38 +4,68 @@
 }
 
 .pageHeader {
-  padding: 20px 16px 12px;
+  padding: 16px 16px 0;
   background: var(--color-surface);
   border-bottom: 1px solid var(--gray-200);
 }
 
+.pageHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gray-500);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.refreshBtn:active {
+  background: var(--gray-100);
+}
+
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--green-800);
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.3px;
 }
 
 .subtitle {
-  font-size: 0.875rem;
-  color: var(--gray-500);
-  margin-top: 2px;
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--gray-400);
 }
 
 /* ── Summary row ─────────────────────────────────────────────────────────── */
 .summary {
   display: flex;
-  gap: 10px;
-  padding: 16px;
+  gap: 8px;
+  padding: 0 0 14px;
 }
 
 .summaryCard {
   flex: 1;
-  border-radius: 10px;
-  padding: 12px 8px;
+  border-radius: 14px;
+  padding: 12px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .summaryOut    { background: var(--red-50);            border: 1px solid rgba(239, 68,  68,  0.2); }
@@ -43,9 +73,10 @@
 .summaryReorder { background: var(--blue-50, #eff6ff); border: 1px solid rgba(59,  130, 246, 0.2); }
 
 .summaryNum {
-  font-size: 1.75rem;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1;
+  letter-spacing: -0.5px;
 }
 
 .summaryOut     .summaryNum    { color: var(--red-600); }
@@ -53,16 +84,35 @@
 .summaryReorder .summaryNum    { color: var(--blue-600, #2563eb); }
 
 .summaryLabel {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 9.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   text-align: center;
+  line-height: 1.3;
 }
 
 .summaryOut     .summaryLabel  { color: var(--red-500); }
 .summaryLow     .summaryLabel  { color: var(--amber-500); }
 .summaryReorder .summaryLabel  { color: var(--blue-500, #3b82f6); }
+
+.summaryBar {
+  width: 100%;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.06);
+  margin-top: 2px;
+}
+
+.summaryBarFill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s;
+}
+
+.summaryBarOut     { background: var(--red-500); }
+.summaryBarLow     { background: var(--amber-500); }
+.summaryBarReorder { background: var(--blue-500, #3b82f6); }
 
 /* ── Sections ─────────────────────────────────────────────────────────────── */
 .sections {
@@ -81,41 +131,86 @@
 .sectionHeader {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.75rem;
+  gap: 8px;
+  padding: 10px 0 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--gray-100);
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sectionIconBox {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.iconBox_out     { background: var(--red-50);           color: var(--red-600);           border: 1px solid rgba(239, 68,  68,  0.2); }
+.iconBox_low     { background: var(--amber-100);         color: var(--amber-600);         border: 1px solid rgba(245, 158, 11,  0.2); }
+.iconBox_reorder { background: var(--blue-100, #dbeafe); color: var(--blue-600, #2563eb); border: 1px solid rgba(59,  130, 246, 0.2); }
+
+.sectionLabel {
+  flex: 1;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 2px 0 4px;
-  border-bottom: 1px solid var(--gray-100);
-}
-
-.sectionCount {
-  margin-left: auto;
-  font-size: 0.78rem;
-  font-weight: 700;
-  opacity: 0.75;
+  text-align: left;
 }
 
 .tier_out     { color: var(--red-600); }
 .tier_low     { color: var(--amber-600); }
 .tier_reorder { color: var(--blue-600, #2563eb); }
 
+.sectionBadge {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 6px;
+}
+
+.badge_out     { background: var(--red-50);           color: var(--red-700); }
+.badge_low     { background: var(--amber-100);         color: var(--amber-700); }
+.badge_reorder { background: var(--blue-100, #dbeafe); color: var(--blue-700, #1d4ed8); }
+
+.chevron {
+  font-size: 11px;
+  color: var(--gray-400);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
 /* ── Item cards ───────────────────────────────────────────────────────────── */
 .itemCard {
   background: var(--color-surface);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 13px 14px;
   border: 1px solid var(--gray-200);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.card_out     { border-left: 4px solid var(--red-500); }
+/* .card_out     { border-left: 4px solid var(--red-500); }
 .card_low     { border-left: 4px solid var(--amber-500); }
-.card_reorder { border-left: 4px solid var(--blue-400, #60a5fa); }
+.card_reorder { border-left: 4px solid var(--blue-400, #60a5fa); } */
 
 .cardTop {
   display: flex;
@@ -127,47 +222,188 @@
 .cardNameGroup {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
 }
 
 .itemName {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--gray-800);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.locationRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.pinIcon {
+  font-size: 10px;
+  color: var(--gray-400);
+  flex-shrink: 0;
 }
 
 .locationLabel {
-  font-size: 0.75rem;
+  font-size: 11.5px;
   color: var(--gray-400);
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.qtyCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
 .qtyChip {
-  flex: 0 0 auto;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 12px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
 }
 
 .chip_out     { background: var(--red-100);           color: var(--red-700); }
 .chip_low     { background: var(--amber-100);         color: var(--amber-700); }
 .chip_reorder { background: var(--blue-100, #dbeafe); color: var(--blue-700, #1d4ed8); }
 
+.qtySubLabel {
+  font-size: 10.5px;
+  color: var(--gray-400);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Health bar ───────────────────────────────────────────────────────────── */
+.healthBar {
+  position: relative;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--gray-200);
+  overflow: visible;
+}
+
+.healthFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.healthFill_out     { background: var(--red-500); }
+.healthFill_low     { background: var(--amber-500); }
+.healthFill_reorder { background: var(--blue-500, #3b82f6); }
+
+.tickAlert {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--amber-500);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.tickReorder {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--blue-500, #3b82f6);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+/* ── Card meta rows ───────────────────────────────────────────────────────── */
 .cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metaNote {
+  font-size: 11px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.metaPct {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pct_out     { color: var(--red-500); }
+.pct_low     { color: var(--amber-500); }
+.pct_reorder { color: var(--blue-500, #3b82f6); }
+
+.cardMetaExtra {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.metaNote {
-  font-size: 0.78rem;
-  color: var(--gray-400);
+/* ── Urgency badges ───────────────────────────────────────────────────────── */
+.urgencyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.urgencyOrderNow {
+  background: var(--red-100);
+  color: var(--red-700);
+}
+
+.urgencyOrderSoon {
+  background: var(--amber-100);
+  color: var(--amber-600);
+}
+
+/* ── Cash flow panel ──────────────────────────────────────────────────────── */
+.cashFlowPanel {
+  margin: 10px 16px 4px;
+  padding: 12px 14px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cashFlowLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cashFlowAmount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gray-900);
 }

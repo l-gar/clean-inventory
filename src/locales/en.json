@@ -145,12 +145,18 @@
     "subtitle": "Items that need your attention",
     "outOfStock": "Out of Stock",
     "lowStock": "Low Stock",
-    "belowReorder": "Below Reorder Point",
+    "belowReorder": "Below Reorder",
     "allClear": "All Stocked",
     "allClearHint": "No items need attention right now",
     "errorLoad": "Could not load inventory. Please try again.",
     "alertBelow": "Alert below",
-    "reorderAt": "Reorder at"
+    "reorderAt": "Reorder at",
+    "healthPct": "{{pct}}% remaining",
+    "daysLeft": "~{{count}} days left",
+    "runsOut": "Runs out ~{{date}}",
+    "orderNow": "Order Now",
+    "orderSoon": "Order Soon",
+    "cashFlow": "Est. reorder spend, next 14 days"
   },
   "connect_sheet": {
     "title": "One Last Step",
@@ -274,6 +280,7 @@
   },
   "members": {
     "title": "Team",
+    "subtitle": "{{memberCount}} members · {{inviteCount}} active invites",
     "tab_team": "Team",
     "tab_invites": "Invites",
     "role_org_owner": "Owner",
@@ -296,6 +303,7 @@
     "retry": "Try Again",
     "empty_team": "No team members yet",
     "new_invite": "New Invite Link",
+    "invite_expires": "Link expires in 7 days",
     "invite_role_label": "Role",
     "invite_role_member": "Member",
     "invite_role_manager": "Manager",
@@ -309,11 +317,15 @@
     "revoke_confirm_yes": "Revoke",
     "revoke_confirm_no": "Keep",
     "revoke_error": "Could not revoke. Please try again.",
+    "expired": "Expired",
     "expires": "Expires {{date}}",
     "created_by": "by {{email}}",
     "loading": "Loading team…",
+    "active_links": "Active Links",
     "empty_invites": "No active invite links",
-    "empty_invites_hint": "Generate a link to invite someone to your team"
+    "empty_invites_hint": "Generate a link to invite someone to your team",
+    "more": "more",
+    "less": "less"
   },
   "settings": {
     "title": "Settings",
@@ -372,5 +384,16 @@
       "exportCsv": "Export Inventory (CSV)",
       "clearAll": "Clear All Inventory"
     }
-  }
+  },
+  "health_settings": "Health Settings",
+  "target_qty": "Target Qty",
+  "target_qty_tip": "The maximum quantity to keep in stock. Sets the 100% reference point for the health bar.",
+  "target_qty_override": "Target Qty (location)",
+  "restock_cycle_days": "Cycle Days",
+  "restock_cycle_days_tip": "How many days a full stock typically lasts. Used to project your stockout date.",
+  "restock_cycle_override": "Cycle Days (location)",
+  "reorder_point": "Reorder Point",
+  "reorder_point_tip": "Trigger a restock reminder when quantity drops to this level.",
+  "reorder_quantity": "Reorder Qty",
+  "reorder_quantity_tip": "How many units to order when you restock this item."
 }

@@ -145,12 +145,18 @@
     "subtitle": "Artículos que necesitan tu atención",
     "outOfStock": "Sin Stock",
     "lowStock": "Stock Bajo",
-    "belowReorder": "Bajo Punto de Reorden",
+    "belowReorder": "Bajo Reorden",
     "allClear": "Todo en Stock",
     "allClearHint": "Ningún artículo necesita atención ahora",
     "errorLoad": "No se pudo cargar el inventario. Inténtalo de nuevo.",
     "alertBelow": "Alerta debajo de",
-    "reorderAt": "Reordenar en"
+    "reorderAt": "Reordenar en",
+    "healthPct": "{{pct}}% restante",
+    "daysLeft": "~{{count}} días restantes",
+    "runsOut": "Se agota ~{{date}}",
+    "orderNow": "Pedir Ya",
+    "orderSoon": "Pedir Pronto",
+    "cashFlow": "Gasto estimado próximos 14 días"
   },
   "connect_sheet": {
     "title": "Un Último Paso",
@@ -274,6 +280,7 @@
   },
   "members": {
     "title": "Equipo",
+    "subtitle": "{{memberCount}} miembros · {{inviteCount}} invitaciones activas",
     "tab_team": "Equipo",
     "tab_invites": "Invitaciones",
     "role_org_owner": "Dueño",
@@ -296,6 +303,7 @@
     "retry": "Reintentar",
     "empty_team": "Aún no hay miembros en el equipo",
     "new_invite": "Nuevo Enlace de Invitación",
+    "invite_expires": "El enlace vence en 7 días",
     "invite_role_label": "Rol",
     "invite_role_member": "Miembro",
     "invite_role_manager": "Gerente",
@@ -309,11 +317,15 @@
     "revoke_confirm_yes": "Revocar",
     "revoke_confirm_no": "Conservar",
     "revoke_error": "No se pudo revocar. Inténtalo de nuevo.",
+    "expired": "Vencido",
     "expires": "Vence {{date}}",
     "created_by": "por {{email}}",
     "loading": "Cargando equipo…",
+    "active_links": "Enlaces Activos",
     "empty_invites": "No hay enlaces de invitación activos",
-    "empty_invites_hint": "Genera un enlace para invitar a alguien a tu equipo"
+    "empty_invites_hint": "Genera un enlace para invitar a alguien a tu equipo",
+    "more": "más",
+    "less": "menos"
   },
   "settings": {
     "title": "Ajustes",
@@ -372,5 +384,16 @@
       "exportCsv": "Exportar Inventario (CSV)",
       "clearAll": "Borrar Todo el Inventario"
     }
-  }
+  },
+  "health_settings": "Configuración de Salud",
+  "target_qty": "Cantidad Objetivo",
+  "target_qty_tip": "La cantidad máxima a mantener en stock. Establece el punto de referencia del 100% en la barra de salud.",
+  "target_qty_override": "Cantidad Obj. (ubicación)",
+  "restock_cycle_days": "Días de Ciclo",
+  "restock_cycle_days_tip": "Cuántos días dura normalmente un stock completo. Se usa para proyectar la fecha de agotamiento.",
+  "restock_cycle_override": "Días de Ciclo (ubicación)",
+  "reorder_point": "Punto de Reorden",
+  "reorder_point_tip": "Activa un recordatorio de reabastecimiento cuando la cantidad baje a este nivel.",
+  "reorder_quantity": "Cant. de Reorden",
+  "reorder_quantity_tip": "Cuántas unidades pedir al reabastecer este artículo."
 }

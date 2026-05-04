@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowLeft, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faPenToSquare, faHeartPulse } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { apiUpdateCatalogItem, apiUpdateStock, apiDeductItem, apiRestockItem, apiAdjustItem } from '../store/api'
 import { parseTrackStock } from '../domain/normalize'
@@ -27,12 +27,18 @@ function itemToForm(item) {
     location:             item.location_id         ?? item.locationId      ?? '',
     quantity:             String(item.quantity      ?? ''),
     unit:                 item.unit                ?? 'each',
-    itemLowStockThreshold: String(item.item_low_stock_threshold ?? item.itemLowStockThreshold ?? item.minQuantity ?? item.min_quantity ?? ''),
-    costPerUnit:          String(item.cost_per_unit ?? item.costPerUnit    ?? ''),
+    itemLowStockThreshold: String(item.item_low_stock_threshold ?? item.itemLowStockThreshold ?? item.minQuantity ?? item.min_quantity ?? (item.lowStockThreshold || '')),
+    costPerUnit:          String(item.cost_per_unit ?? item.costPerUnit ?? item.resolvedCost ?? ''),
     costPerUnitOverride:  String(item.cost_per_unit_override ?? item.costPerUnitOverride ?? ''),
-    expectedJobs:         String(item.expected_jobs ?? item.expectedJobs   ?? ''),
+    expectedJobs:         String(item.expected_jobs ?? item.expectedJobs ?? ''),
     trackStock: parseTrackStock(item.track_stock ?? item.trackStock),
     description:          item.description         ?? '',
+    targetQuantity:          String(item.target_quantity        ?? item.targetQuantity        ?? ''),
+    restockCycleDays:        String(item.restock_cycle_days     ?? item.restockCycleDays      ?? ''),
+    targetQuantityOverride:  String(item.target_quantity_override ?? item.targetQuantityOverride ?? ''),
+    restockCycleDaysOverride:String(item.restock_cycle_days_override ?? item.restockCycleDaysOverride ?? ''),
+    reorderPoint:            String(item.reorderPoint    ?? item.reorder_point    ?? ''),
+    reorderQuantity:         String(item.reorder_quantity ?? item.reorderQuantity ?? ''),
   }
 }
 
@@ -66,6 +72,32 @@ export default function EditItem() {
   const [saving,      setSaving]      = useState(false)
   const [saveError,   setSaveError]   = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
+
+  const [healthTip, setHealthTip] = useState(null)
+  const healthTipRef = useRef(null)
+
+  const toggleHealthTip = (id, e) => {
+    e.stopPropagation()
+    setHealthTip((prev) => (prev === id ? null : id))
+  }
+
+  useEffect(() => {
+    if (!healthTip) return
+    const close = () => setHealthTip(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [healthTip])
+
+  useLayoutEffect(() => {
+    const el = healthTipRef.current
+    if (!el) return
+    el.style.left = '0'
+    const { left, right } = el.getBoundingClientRect()
+    const rightOverflow = right - window.innerWidth + 8
+    const leftOverflow  = 8 - left
+    if (rightOverflow > 0) el.style.left = `${-rightOverflow}px`
+    else if (leftOverflow > 0) el.style.left = `${leftOverflow}px`
+  }, [healthTip])
 
   // If store was empty on mount but populates later, seed the form
   useEffect(() => {
@@ -123,6 +155,12 @@ export default function EditItem() {
           category:    form.category,
           unit:        form.unit,
           trackStock:  form.trackStock,
+          ...(isOwner ? {
+            targetQuantity:   form.targetQuantity,
+            restockCycleDays: form.restockCycleDays,
+            reorderPoint:     form.reorderPoint,
+            reorderQuantity:  form.reorderQuantity,
+          } : {}),
         })
       }
 
@@ -134,15 +172,19 @@ export default function EditItem() {
           itemLowStockThreshold: form.itemLowStockThreshold,
           costPerUnitOverride:   form.costPerUnitOverride,
           expectedJobs:          form.expectedJobs,
+          targetQuantityOverride:   form.targetQuantityOverride,
+          restockCycleDaysOverride: form.restockCycleDaysOverride,
         })
       }
 
       invalidateInventory()
       if (canEditAll) invalidateCatalog()
-      // Prime fresh data into store + sessionStorage during the splash delay
-      fetchInventory(user.email, user.orgId, inventoryLocationId ?? 'all')
-      if (canEditAll) fetchCatalog(user.email, user.orgId)
       setSaveSuccess(true)
+      // Await fresh data so InventoryList doesn't seed from stale store on navigate
+      await Promise.allSettled([
+        fetchInventory(user.email, user.orgId, inventoryLocationId ?? 'all'),
+        canEditAll ? fetchCatalog(user.email, user.orgId) : Promise.resolve(),
+      ])
       setTimeout(() => navigate('/inventory'), 1500)
     } catch (err) {
       setSaveError(err?.message || t('edit_item_save_error'))
@@ -278,6 +320,94 @@ export default function EditItem() {
             showCatalogCost
             showCostOverride
           />
+        )}
+
+        {/* ── Health settings — owner / manager only ──────────── */}
+        {canEditAll && form && (
+          <div className={styles.detailsCard}>
+            <div className={styles.detailsHeader}>
+              <FontAwesomeIcon icon={faHeartPulse} className={styles.detailsIcon} aria-hidden="true" />
+              <span className={styles.detailsTitle}>{t('health_settings')}</span>
+            </div>
+            <div className={styles.detailsBody}>
+              {isOwner && (
+                <>
+                  <div className={styles.fieldRow}>
+                    <div className={styles.field}>
+                      <div className={styles.labelRow}>
+                        <label className={styles.label} htmlFor="targetQuantity">{t('target_qty')}</label>
+                        <span className={styles.tipWrap}>
+                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('targetQty', e)} aria-expanded={healthTip === 'targetQty'} aria-label={t('more_info')}>i</button>
+                          {healthTip === 'targetQty' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('target_qty_tip')}</div>}
+                        </span>
+                      </div>
+                      <input id="targetQuantity" name="targetQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.targetQuantity} onChange={handleChange} />
+                    </div>
+                    <div className={styles.field}>
+                      <div className={styles.labelRow}>
+                        <label className={styles.label} htmlFor="restockCycleDays">{t('restock_cycle_days')}</label>
+                        <span className={styles.tipWrap}>
+                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('cycleDays', e)} aria-expanded={healthTip === 'cycleDays'} aria-label={t('more_info')}>i</button>
+                          {healthTip === 'cycleDays' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('restock_cycle_days_tip')}</div>}
+                        </span>
+                      </div>
+                      <input id="restockCycleDays" name="restockCycleDays" type="number" min="0" className={styles.input} placeholder="—" value={form.restockCycleDays} onChange={handleChange} />
+                    </div>
+                  </div>
+                  <div className={styles.fieldRow}>
+                    <div className={styles.field}>
+                      <div className={styles.labelRow}>
+                        <label className={styles.label} htmlFor="reorderPoint">{t('reorder_point')}</label>
+                        <span className={styles.tipWrap}>
+                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('reorderPoint', e)} aria-expanded={healthTip === 'reorderPoint'} aria-label={t('more_info')}>i</button>
+                          {healthTip === 'reorderPoint' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('reorder_point_tip')}</div>}
+                        </span>
+                      </div>
+                      <input id="reorderPoint" name="reorderPoint" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderPoint} onChange={handleChange} />
+                    </div>
+                    <div className={styles.field}>
+                      <div className={styles.labelRow}>
+                        <label className={styles.label} htmlFor="reorderQuantity">{t('reorder_quantity')}</label>
+                        <span className={styles.tipWrap}>
+                          <button type="button" className={styles.infoBtn} onClick={(e) => toggleHealthTip('reorderQty', e)} aria-expanded={healthTip === 'reorderQty'} aria-label={t('more_info')}>i</button>
+                          {healthTip === 'reorderQty' && <div ref={healthTipRef} className={styles.tooltip} role="tooltip">{t('reorder_quantity_tip')}</div>}
+                        </span>
+                      </div>
+                      <input id="reorderQuantity" name="reorderQuantity" type="number" min="0" className={styles.input} placeholder="—" value={form.reorderQuantity} onChange={handleChange} />
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className={styles.fieldRow}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="targetQuantityOverride">{t('target_qty_override')}</label>
+                  <input
+                    id="targetQuantityOverride"
+                    name="targetQuantityOverride"
+                    type="number"
+                    min="0"
+                    className={styles.input}
+                    placeholder={form.targetQuantity || '—'}
+                    value={form.targetQuantityOverride}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="restockCycleDaysOverride">{t('restock_cycle_override')}</label>
+                  <input
+                    id="restockCycleDaysOverride"
+                    name="restockCycleDaysOverride"
+                    type="number"
+                    min="0"
+                    className={styles.input}
+                    placeholder={form.restockCycleDays || '—'}
+                    value={form.restockCycleDaysOverride}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ── Description — owner / manager only ─────────────── */}
