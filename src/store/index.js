@@ -31,6 +31,7 @@ import {
   apiGetCatalogItems,
   apiGetStockByLocation,
   apiGetStockTransactions,
+  apiGetItemTransactions,
   apiGetOrgMembers,
   apiGetActiveInvites,
   apiGetActivityLog,
@@ -260,7 +261,7 @@ export const useStore = create((set, get) => ({
    * Fetch stock transaction history for a locationId (or 'all').
    * Automatically invalidates when locationId changes.
    */
-  fetchStockTransactions: async (email, orgId, locationId) => {
+  fetchStockTransactions: async (email, orgId, locationId, days) => {
     const state = get()
 
     if (state.stockTransactionsLocationId !== locationId) {
@@ -273,7 +274,7 @@ export const useStore = create((set, get) => ({
 
     set({ stockTransactionsLoading: true, stockTransactionsError: false })
     try {
-      const transactions = await apiGetStockTransactions({ email, orgId, locationId })
+      const transactions = await apiGetStockTransactions({ email, orgId, locationId, days })
       set({ stockTransactions: transactions, stockTransactionsFetched: Date.now(), stockTransactionsLoading: false })
       return transactions
     } catch (err) {
@@ -283,6 +284,35 @@ export const useStore = create((set, get) => ({
   },
 
   invalidateStockTransactions: () => set({ stockTransactionsFetched: null }),
+
+  // ── Item transaction history (single stock record) ────────────────────────────
+  itemTransactions:        [],
+  itemTransactionsFetched: null,
+  itemTransactionsLoading: false,
+  itemTransactionsError:   false,
+  itemTransactionsStockId: null,
+
+  fetchItemTransactions: async (email, orgId, stockId, locationId) => {
+    const state = get()
+    if (state.itemTransactionsStockId !== stockId) {
+      set({ itemTransactionsFetched: null, itemTransactions: [], itemTransactionsStockId: stockId })
+    }
+    const current = get()
+    if (!isExpired(current.itemTransactionsFetched, TTL.stockTransactions)) return current.itemTransactions
+    if (current.itemTransactionsLoading) return current.itemTransactions
+    set({ itemTransactionsLoading: true, itemTransactionsError: false })
+    try {
+      const all = await apiGetItemTransactions({ email, orgId, locationId })
+      const transactions = all.filter(t => String(t.stock_id ?? t.stockId ?? '') === String(stockId))
+      set({ itemTransactions: transactions, itemTransactionsFetched: Date.now(), itemTransactionsLoading: false })
+      return transactions
+    } catch {
+      set({ itemTransactionsError: true, itemTransactionsLoading: false })
+      throw new Error('failed')
+    }
+  },
+
+  invalidateItemTransactions: () => set({ itemTransactionsFetched: null }),
 
   // ── Org members ─────────────────────────────────────────────────────────────
   members:        [],
@@ -386,6 +416,7 @@ export const useStore = create((set, get) => ({
       members:          [], membersFetched: null,              membersLoading: false,            membersError: false,
       invites:          [], invitesFetched: null,              invitesLoading: false,            invitesError: false,
       stockTransactions:[], stockTransactionsFetched: null,    stockTransactionsLoading: false,  stockTransactionsError: false,   stockTransactionsLocationId: null,
+      itemTransactions: [], itemTransactionsFetched: null,     itemTransactionsLoading: false,   itemTransactionsError: false,    itemTransactionsStockId: null,
       activityLog:      [], activityLogFetched: null,          activityLogLoading: false,        activityLogError: false,         activityLogLocationId: null,
     })
   },

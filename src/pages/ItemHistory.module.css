@@ -1,0 +1,262 @@
+.page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.pageHeader {
+  padding: 16px 16px 12px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0 8px;
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.backBtn:hover { color: var(--gray-700); }
+
+.backBtn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gray-800);
+  letter-spacing: -0.3px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerChips {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--color-border);
+  color: var(--gray-600);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chip svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+.chipCount {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+/* ── List ────────────────────────────────────────────────────────────────── */
+.list {
+  flex: 1;
+  padding-bottom: 16px;
+}
+
+/* ── Date group header ───────────────────────────────────────────────────── */
+.dateHeader {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-page);
+  padding: 14px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dateLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.dateRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dateCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-300);
+}
+
+.dateChevron {
+  width: 10px;
+  height: 10px;
+  color: var(--gray-400);
+  transition: transform 0.2s;
+}
+
+.dateChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+/* ── Day group ───────────────────────────────────────────────────────────── */
+.dayGroup + .dayGroup::before {
+  content: '';
+  display: block;
+  height: 1px;
+  background: var(--color-border);
+  margin: 0 16px;
+}
+
+/* ── Day card ────────────────────────────────────────────────────────────── */
+.dayCardWrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.dayCardWrapCollapsed {
+  grid-template-rows: 0fr;
+}
+
+.dayCardInner {
+  overflow: hidden;
+}
+
+.dayCard {
+  background: var(--color-surface);
+  border-radius: 12px;
+  margin: 0 16px 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Entry row ───────────────────────────────────────────────────────────── */
+.entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.entry:last-child {
+  border-bottom: none;
+}
+
+/* ── Dot icon ────────────────────────────────────────────────────────────── */
+.dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+.dot_green  { background: var(--emerald-50);  color: var(--emerald-500); }
+.dot_amber  { background: var(--amber-50);    color: var(--amber-600);   }
+.dot_blue   { background: var(--green-50);    color: var(--green-600);   }
+.dot_violet { background: var(--violet-50);   color: var(--violet-600);  }
+.dot_gray   { background: var(--gray-100);    color: var(--gray-500);    }
+
+/* ── Entry body ──────────────────────────────────────────────────────────── */
+.entryBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.typeLabel {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.3;
+}
+
+/* ── Meta row ────────────────────────────────────────────────────────────── */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.delta {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.deltaPos {
+  background: var(--emerald-50);
+  color: var(--emerald-500);
+}
+
+.deltaNeg {
+  background: var(--amber-50);
+  color: var(--amber-600);
+}
+
+.performer {
+  font-size: 11.5px;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.timestamp {
+  font-size: 11.5px;
+  color: var(--gray-300);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.notes {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gray-400);
+  font-style: italic;
+  line-height: 1.4;
+}

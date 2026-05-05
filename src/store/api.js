@@ -48,9 +48,16 @@ export async function apiGetCatalogItems({ email, orgId }) {
   return data.items ?? []
 }
 
-/** locationId is optional — omit for all transactions across the org. */
-export async function apiGetStockTransactions({ email, orgId, locationId }) {
-  const data = await callAppsScript('getStockTransactions', { email, orgId, locationId })
+/** locationId is optional — omit for all transactions across the org. days limits results to the last N days. */
+export async function apiGetStockTransactions({ email, orgId, locationId, days } = {}) {
+  const data = await callAppsScript('getStockTransactions', { email, orgId, locationId, days })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data.transactions ?? []
+}
+
+/** Fetch transactions for a location, to be filtered client-side by stockId. days limits to last N days. */
+export async function apiGetItemTransactions({ email, orgId, locationId, days } = {}) {
+  const data = await callAppsScript('getStockTransactions', { email, orgId, locationId, days })
   if (data.success === false) throw new Error(data.error ?? 'failed')
   return data.transactions ?? []
 }

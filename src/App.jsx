@@ -16,6 +16,7 @@ import Locations from './pages/Locations'
 import EditItem from './pages/EditItem'
 import MembersPage from './pages/MembersPage'
 import ActivityLog from './pages/ActivityLog'
+import ItemHistory from './pages/ItemHistory'
 import JoinPage from './pages/JoinPage'
 
 function App() {
@@ -156,6 +157,7 @@ function App() {
         <Route path="stock-health" element={needsLocations ? <Navigate to="/locations" replace /> : <StockHealth />} />
         <Route path="settings" element={<Settings />} />
         <Route path="activity-log" element={<ActivityLog />} />
+        <Route path="item/:stockId/history" element={<ItemHistory />} />
         <Route
           path="members"
           element={

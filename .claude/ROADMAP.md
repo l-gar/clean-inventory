@@ -20,6 +20,8 @@
 - Members moved to Settings → Organization section; Activity Log added to bottom nav (all roles)
 - MembersPage back button → returns to Settings; Settings stays highlighted in bottom nav on /members
 
+- Item transaction history (per-item timeline · location-scoped · day-grouped cards · color-coded type icons · delta chips · pull-to-refresh · History button on inventory list rows)
+
 ## In progress
 
 ## Pending

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowsRotate,
   faBoxOpen,
+  faClockRotateLeft,
   faLocationDot,
   faMagnifyingGlass,
   faPenToSquare,
@@ -652,6 +653,16 @@ export default function InventoryList() {
                   <FontAwesomeIcon icon={faRightLeft} aria-hidden="true" />
                   <span className={styles.transferBtnText}>{t('inventory.transfer')}</span>
                 </button>
+                <Link
+                  to={`/item/${item.itemId}/history`}
+                  state={{ itemName: item.itemName, locationId: item.location_id }}
+                  className={styles.historyLink}
+                  aria-label={`${t('inventory.history')}: ${item.itemName}`}
+                  title={t('inventory.history')}
+                >
+                  <FontAwesomeIcon icon={faClockRotateLeft} aria-hidden="true" />
+                  <span className={styles.historyLinkText}>{t('inventory.history')}</span>
+                </Link>
               </div>
             </div>
           )

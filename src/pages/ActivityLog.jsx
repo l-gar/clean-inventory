@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowUp, faArrowDown, faPenToSquare, faArrowRightArrowLeft,
   faPlus, faTrash, faUserPlus, faUserMinus, faLocationDot,
-  faClockRotateLeft, faFilter,
+  faClockRotateLeft, faFilter, faChevronDown,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
@@ -15,6 +15,16 @@ import InlineLoader from '../components/InlineLoader'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import styles from './ActivityLog.module.css'
+
+const TX_TYPE_CONFIG = {
+  restock:       { icon: faArrowUp,            mod: 'green'  },
+  job_usage:     { icon: faArrowDown,           mod: 'amber'  },
+  sale:          { icon: faArrowDown,           mod: 'amber'  },
+  transfer_out:  { icon: faArrowRightArrowLeft, mod: 'violet' },
+  transfer_in:   { icon: faArrowRightArrowLeft, mod: 'green'  },
+  adjustment:    { icon: faPenToSquare,         mod: 'blue'   },
+  initial_count: { icon: faPlus,               mod: 'green'  },
+}
 
 const ACTION_CONFIG = {
   stock_restocked:   { icon: faArrowUp,            mod: 'green'  },
@@ -83,7 +93,7 @@ function groupByDay(entries, t, language) {
     const key = dayKey(e.timestamp)
     if (key !== curKey) {
       curKey = key
-      curGroup = { label: dayLabel(e.timestamp, t, language), entries: [] }
+      curGroup = { key, label: dayLabel(e.timestamp, t, language), entries: [] }
       groups.push(curGroup)
     }
     curGroup.entries.push(e)
@@ -120,12 +130,19 @@ function SummaryBar({ entries, t }) {
   )
 }
 
-function DateHeader({ label, count }) {
+function DateHeader({ label, count, collapsed, onToggle }) {
   return (
-    <div className={styles.dateHeader}>
+    <button type="button" className={styles.dateHeader} onClick={onToggle}>
       <span className={styles.dateLabel}>{label}</span>
-      <span className={styles.dateCount}>{count}</span>
-    </div>
+      <div className={styles.dateRight}>
+        <span className={styles.dateCount}>{count}</span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`${styles.dateChevron} ${collapsed ? styles.dateChevronCollapsed : ''}`}
+          aria-hidden="true"
+        />
+      </div>
+    </button>
   )
 }
 
@@ -207,6 +224,8 @@ function ActivityEntry({ entry, locations, language, t }) {
   const hasDelta      = entry.quantity_before != null && entry.quantity_after != null
   const delta         = hasDelta ? Number(entry.quantity_after) - Number(entry.quantity_before) : null
   const isStockAction = STOCK_ACTIONS.has(entry.action)
+  const [nameExpanded, setNameExpanded] = useState(false)
+  const displayedName = ORG_ACTIONS.has(entry.action) ? displayName(entry.item_name) : entry.item_name
 
   return (
     <div className={styles.entry}>
@@ -214,29 +233,95 @@ function ActivityEntry({ entry, locations, language, t }) {
         <FontAwesomeIcon icon={icon} aria-hidden="true" />
       </span>
       <div className={styles.entryBody}>
-        <p className={styles.summary}>
-          <span className={styles.performer}>{performer}</span>
-          {' '}
+        <div className={styles.summary}>
           <span className={styles.verb}>{t(`activity_log.action_${entry.action}`, { defaultValue: entry.action })}</span>
-          {entry.item_name && (
-            <>{' '}<span className={`${styles.itemName} ${ORG_ACTIONS.has(entry.action) ? styles.itemNameOrg : ''}`}>
-              {ORG_ACTIONS.has(entry.action) ? displayName(entry.item_name) : entry.item_name}
-            </span></>
-          )}
-        </p>
-        <div className={styles.meta}>
+          <span className={styles.timestamp}>{formatTime(entry.timestamp, language)}</span>
+        </div>
+        {entry.item_name && (
+          <div className={styles.itemRow}>
+            <button
+              type="button"
+              className={`${styles.itemName} ${ORG_ACTIONS.has(entry.action) ? styles.itemNameOrg : ''} ${nameExpanded ? styles.itemNameExpanded : ''}`}
+              onClick={() => setNameExpanded(v => !v)}
+            >
+              {displayedName}
+            </button>
+          </div>
+        )}
+        <div className={styles.metaRow}>
           {hasDelta && delta !== 0 && isStockAction && (
             <span className={`${styles.delta} ${delta > 0 ? styles.deltaPos : styles.deltaNeg}`}>
               {delta > 0 ? `+${delta}` : delta}{' → '}{entry.quantity_after}
             </span>
           )}
+        </div>
+        <div className={styles.metaRow}>
+          <span className={styles.performer}>{performer}</span>
           {locationName && (
             <span className={styles.entryLocation}>
               <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
               {locationName}
             </span>
           )}
-          <span className={styles.timestamp}>{formatTime(entry.timestamp, language)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StockTransactionEntry({ tx, locations, catalog, language, t }) {
+  const txType       = tx.transaction_type ?? tx.transactionType
+  const { icon, mod } = TX_TYPE_CONFIG[txType] ?? DEFAULT_CONFIG
+  const delta        = Number(tx.quantity_delta ?? tx.quantityDelta)
+  const after        = (tx.quantity_after ?? tx.quantityAfter) != null
+    ? Number(tx.quantity_after ?? tx.quantityAfter) : null
+  const catalogId    = tx.catalog_id ?? tx.catalogId
+  const catalogItem  = catalog?.find(c => String(c.catalog_id ?? c.catalogId ?? '') === String(catalogId))
+  const itemName     = tx.item_name ?? tx.itemName ?? catalogItem?.item_name ?? catalogItem?.itemName ?? ''
+  const locId        = tx.location_id ?? tx.locationId
+  const locationName = locations.find(l => l.location_id === locId)?.location_name
+  const performer    = displayName(tx.performed_by ?? tx.performedBy)
+  const typeLabel    = txType
+    ? t(`item_history.type_${txType}`, { defaultValue: txType })
+    : t('item_history.type_unknown')
+  const [nameExpanded, setNameExpanded] = useState(false)
+
+  return (
+    <div className={styles.entry}>
+      <span className={`${styles.dot} ${styles[`dot_${mod}`]}`}>
+        <FontAwesomeIcon icon={icon} aria-hidden="true" />
+      </span>
+      <div className={styles.entryBody}>
+        <div className={styles.summary}>
+          <span className={styles.verb}>{typeLabel}</span>
+          <span className={styles.timestamp}>{formatTime(tx.timestamp, language)}</span>
+        </div>
+        {itemName && (
+          <div className={styles.itemRow}>
+            <button
+              type="button"
+              className={`${styles.itemName} ${nameExpanded ? styles.itemNameExpanded : ''}`}
+              onClick={() => setNameExpanded(v => !v)}
+            >
+              {itemName}
+            </button>
+          </div>
+        )}
+        <div className={styles.metaRow}>
+          {!isNaN(delta) && delta !== 0 && (
+            <span className={`${styles.delta} ${delta > 0 ? styles.deltaPos : styles.deltaNeg}`}>
+              {delta > 0 ? `+${delta}` : delta}{after != null ? ` → ${after}` : ''}
+            </span>
+          )}
+        </div>
+        <div className={styles.metaRow}>
+          <span className={styles.performer}>{performer}</span>
+          {locationName && (
+            <span className={styles.entryLocation}>
+              <FontAwesomeIcon icon={faLocationDot} aria-hidden="true" />
+              {locationName}
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -255,22 +340,60 @@ export default function ActivityLog() {
   const fetchActivityLog      = useStore(s => s.fetchActivityLog)
   const invalidateActivityLog = useStore(s => s.invalidateActivityLog)
 
-  const [category,   setCategory]   = useState('all')
-  const [locationId, setLocationId] = useState('all')
-  const [dateRange,  setDateRange]  = useState('all')
-  const [limit,      setLimit]      = useState(PAGE_SIZE)
-  const [filterOpen, setFilterOpen] = useState(false)
+  const stockTransactions        = useStore(s => s.stockTransactions)
+  const stockTransactionsLoading = useStore(s => s.stockTransactionsLoading)
+  const stockTransactionsError   = useStore(s => s.stockTransactionsError)
+  const stockTransactionsFetched = useStore(s => s.stockTransactionsFetched)
+  const fetchStockTransactions   = useStore(s => s.fetchStockTransactions)
+  const invalidateStockTx        = useStore(s => s.invalidateStockTransactions)
+
+  const catalog      = useStore(s => s.catalog)
+  const fetchCatalog = useStore(s => s.fetchCatalog)
+
+  const [tab,           setTab]           = useState('activity')
+  const [category,      setCategory]      = useState('all')
+  const [locationId,    setLocationId]    = useState('all')
+  const [dateRange,     setDateRange]     = useState('all')
+  const [limit,         setLimit]         = useState(PAGE_SIZE)
+  const [filterOpen,    setFilterOpen]    = useState(false)
+  const [collapsedDays, setCollapsedDays] = useState(new Set())
+
+  function toggleDay(key) {
+    setCollapsedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function switchTab(newTab) { setTab(newTab); setLimit(PAGE_SIZE); setCollapsedDays(new Set()) }
 
   const load = useCallback(() => {
     if (user) return fetchActivityLog(user.email, user.orgId, 'all')
   }, [user, fetchActivityLog])
 
+  const loadTx = useCallback(() => {
+    if (user) return fetchStockTransactions(user.email, user.orgId, locationId, 365)
+  }, [user, fetchStockTransactions, locationId])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (tab === 'transactions') {
+      loadTx()
+      if (user) fetchCatalog(user.email, user.orgId)
+    }
+  }, [tab, loadTx, fetchCatalog, user])
 
   usePullToRefresh(useCallback(async () => {
-    invalidateActivityLog()
-    await load()
-  }, [invalidateActivityLog, load]))
+    if (tab === 'activity') {
+      invalidateActivityLog()
+      await load()
+    } else {
+      invalidateStockTx()
+      await loadTx()
+    }
+  }, [tab, invalidateActivityLog, load, invalidateStockTx, loadTx]))
 
   const filtered = useMemo(() => {
     let entries = activityLog
@@ -293,15 +416,36 @@ export default function ActivityLog() {
     return entries
   }, [activityLog, category, locationId, dateRange])
 
+  const filteredTx = useMemo(() => {
+    let entries = stockTransactions
+    if (locationId !== 'all') entries = entries.filter(e => (e.location_id ?? e.locationId) === locationId)
+    if (dateRange !== 'all') {
+      const now = Date.now()
+      const cutoff =
+        dateRange === 'today' ? new Date().setHours(0, 0, 0, 0) :
+        dateRange === '7d'    ? now - 7  * 24 * 60 * 60 * 1000 :
+                                now - 30 * 24 * 60 * 60 * 1000
+      entries = entries.filter(e => new Date(e.timestamp).getTime() >= cutoff)
+    }
+    return entries
+  }, [stockTransactions, locationId, dateRange])
+
   const visible  = filtered.slice(0, limit)
   const hasMore  = filtered.length > limit
   const groups   = groupByDay(visible, t, i18n.language)
 
-  const activeFilterCount = (locationId !== 'all' ? 1 : 0) + (dateRange !== 'all' ? 1 : 0)
-  const hasStaleData = activityLog.length > 0
-  const isFirstLoad  = !hasStaleData && !activityLogFetched
+  const txVisible = filteredTx.slice(0, limit)
+  const txHasMore = filteredTx.length > limit
+  const txGroups  = groupByDay(txVisible, t, i18n.language)
 
-  if (isFirstLoad && activityLogLoading) return <LoadingScreen />
+  const activeFilterCount = (locationId !== 'all' ? 1 : 0) + (dateRange !== 'all' ? 1 : 0)
+  const hasStaleData  = activityLog.length > 0
+  const isFirstLoad   = !hasStaleData && !activityLogFetched
+  const txHasStale    = stockTransactions.length > 0
+  const txIsFirstLoad = !txHasStale && !stockTransactionsFetched
+
+  if (tab === 'activity'     && isFirstLoad   && activityLogLoading)        return <LoadingScreen />
+  if (tab === 'transactions' && txIsFirstLoad && stockTransactionsLoading)  return <LoadingScreen />
 
   function resetLimit() { setLimit(PAGE_SIZE) }
 
@@ -312,82 +456,152 @@ export default function ActivityLog() {
 
   return (
     <div className={styles.page}>
-      {activityLogLoading && hasStaleData && <InlineLoader />}
+      {(activityLogLoading && hasStaleData) || (stockTransactionsLoading && txHasStale) ? <InlineLoader /> : null}
 
       <div className={styles.pageHeader}>
         <h1 className={styles.title}>{t('activity_log.title')}</h1>
         <p className={styles.subtitle}>
-          {t('activity_log.n_events', { count: filtered.length })}{subtitleDate}
-        </p>
-      </div>
-
-      <div className={styles.tabBar}>
-        <div className={styles.tabs}>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              type="button"
-              className={`${styles.tab} ${category === cat ? styles.tabActive : ''}`}
-              onClick={() => { setCategory(cat); resetLimit() }}
-            >
-              {t(`activity_log.filter_${cat}`)}
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          className={`${styles.filterBtn} ${activeFilterCount > 0 ? styles.filterBtnActive : ''}`}
-          onClick={() => setFilterOpen(true)}
-        >
-          <FontAwesomeIcon icon={faFilter} aria-hidden="true" />
-          {activeFilterCount > 0
-            ? <span className={styles.filterBadge}>{activeFilterCount}</span>
-            : <span>{t('activity_log.filter_btn')}</span>
+          {tab === 'activity'
+            ? `${t('activity_log.n_events', { count: filtered.length })}${subtitleDate}`
+            : t('activity_log.n_transactions', { count: filteredTx.length })
           }
-        </button>
+        </p>
+        <div className={styles.modeTabs}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'activity'}
+            className={`${styles.modeTab} ${tab === 'activity' ? styles.modeTabActive : ''}`}
+            onClick={() => switchTab('activity')}
+          >
+            <FontAwesomeIcon icon={faClockRotateLeft} aria-hidden="true" />
+            {t('activity_log.tab_activity')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'transactions'}
+            className={`${styles.modeTab} ${tab === 'transactions' ? styles.modeTabActive : ''}`}
+            onClick={() => switchTab('transactions')}
+          >
+            <FontAwesomeIcon icon={faArrowRightArrowLeft} aria-hidden="true" />
+            {t('activity_log.tab_transactions')}
+          </button>
+        </div>
       </div>
 
-      <SummaryBar entries={filtered} t={t} />
+      {tab === 'activity' && (
+        <div className={styles.tabBar}>
+          <div className={styles.tabs}>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                type="button"
+                className={`${styles.tab} ${category === cat ? styles.tabActive : ''}`}
+                onClick={() => { setCategory(cat); resetLimit() }}
+              >
+                {t(`activity_log.filter_${cat}`)}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className={`${styles.filterBtn} ${activeFilterCount > 0 ? styles.filterBtnActive : ''}`}
+            onClick={() => setFilterOpen(true)}
+          >
+            <FontAwesomeIcon icon={faFilter} aria-hidden="true" />
+            {activeFilterCount > 0
+              ? <span className={styles.filterBadge}>{activeFilterCount}</span>
+              : <span>{t('activity_log.filter_btn')}</span>
+            }
+          </button>
+        </div>
+      )}
 
-      {activityLogError && (
+      {tab === 'transactions' && (
+        <div className={styles.txFilterBar}>
+          <button
+            type="button"
+            className={`${styles.filterBtn} ${activeFilterCount > 0 ? styles.filterBtnActive : ''}`}
+            onClick={() => setFilterOpen(true)}
+          >
+            <FontAwesomeIcon icon={faFilter} aria-hidden="true" />
+            {activeFilterCount > 0
+              ? <span className={styles.filterBadge}>{activeFilterCount}</span>
+              : <span>{t('activity_log.filter_btn')}</span>
+            }
+          </button>
+        </div>
+      )}
+
+      {tab === 'activity' && <SummaryBar entries={filtered} t={t} />}
+
+      {/* ── Activity tab ─────────────────────────────────────────────────── */}
+      {tab === 'activity' && activityLogError && (
         <ErrorState variant="banner" message={t('activity_log.error')} />
       )}
-
-      {!activityLogError && visible.length === 0 && (
-        <EmptyState
-          icon={faClockRotateLeft}
-          title={t('activity_log.empty_title')}
-          body={t('activity_log.empty_body')}
-          iconCircle
-          fill
-        />
+      {tab === 'activity' && !activityLogError && visible.length === 0 && (
+        <EmptyState icon={faClockRotateLeft} title={t('activity_log.empty_title')} body={t('activity_log.empty_body')} iconCircle fill />
       )}
-
-      {!activityLogError && visible.length > 0 && (
+      {tab === 'activity' && !activityLogError && visible.length > 0 && (
         <div className={styles.list}>
           {groups.map(group => (
-            <div key={group.label}>
-              <DateHeader label={group.label} count={group.entries.length} />
-              <div className={styles.dayCard}>
-                {group.entries.map((entry, i) => (
-                  <ActivityEntry
-                    key={`${entry.timestamp}-${i}`}
-                    entry={entry}
-                    locations={locations}
-                    language={i18n.language}
-                    t={t}
-                  />
-                ))}
+            <div key={group.label} className={styles.dayGroup}>
+              <DateHeader
+                label={group.label}
+                count={group.entries.length}
+                collapsed={collapsedDays.has(group.key)}
+                onToggle={() => toggleDay(group.key)}
+              />
+              <div className={`${styles.dayCardWrap} ${collapsedDays.has(group.key) ? styles.dayCardWrapCollapsed : ''}`}>
+                <div className={styles.dayCardInner}>
+                  <div className={styles.dayCard}>
+                    {group.entries.map((entry, i) => (
+                      <ActivityEntry key={`${entry.timestamp}-${i}`} entry={entry} locations={locations} language={i18n.language} t={t} />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
           {hasMore && (
-            <button
-              type="button"
-              className={styles.loadMore}
-              onClick={() => setLimit(l => l + PAGE_SIZE)}
-            >
+            <button type="button" className={styles.loadMore} onClick={() => setLimit(l => l + PAGE_SIZE)}>
+              {t('activity_log.load_more')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Transactions tab ─────────────────────────────────────────────── */}
+      {tab === 'transactions' && stockTransactionsError && (
+        <ErrorState variant="banner" message={t('activity_log.tx_error')} />
+      )}
+      {tab === 'transactions' && !stockTransactionsError && txVisible.length === 0 && (
+        <EmptyState icon={faArrowRightArrowLeft} title={t('activity_log.tx_empty_title')} body={t('activity_log.tx_empty_body')} iconCircle fill />
+      )}
+      {tab === 'transactions' && !stockTransactionsError && txVisible.length > 0 && (
+        <div className={styles.list}>
+          {txGroups.map(group => (
+            <div key={group.label} className={styles.dayGroup}>
+              <DateHeader
+                label={group.label}
+                count={group.entries.length}
+                collapsed={collapsedDays.has(group.key)}
+                onToggle={() => toggleDay(group.key)}
+              />
+              <div className={`${styles.dayCardWrap} ${collapsedDays.has(group.key) ? styles.dayCardWrapCollapsed : ''}`}>
+                <div className={styles.dayCardInner}>
+                  <div className={styles.dayCard}>
+                    {group.entries.map((tx, i) => (
+                      <StockTransactionEntry key={`${tx.transaction_id ?? tx.timestamp}-${i}`} tx={tx} locations={locations} catalog={catalog} language={i18n.language} t={t} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {txHasMore && (
+            <button type="button" className={styles.loadMore} onClick={() => setLimit(l => l + PAGE_SIZE)}>
               {t('activity_log.load_more')}
             </button>
           )}
