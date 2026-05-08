@@ -1,0 +1,1 @@
+import{M as e,P as t}from"./AuthContext-CwnOg8-v.js";var n=(0,t(e(),1).createContext)({register:()=>{}});export{n as t};
