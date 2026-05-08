@@ -19,6 +19,7 @@ const MembersPage     = lazy(() => import('./pages/MembersPage'))
 const ActivityLog     = lazy(() => import('./pages/ActivityLog'))
 const ItemHistory     = lazy(() => import('./pages/ItemHistory'))
 const JoinPage        = lazy(() => import('./pages/JoinPage'))
+const Admin           = lazy(() => import('./pages/Admin'))
 
 function App() {
   const { user, loading, hasLocations, setHasLocations } = useAuth()
@@ -182,6 +183,15 @@ function App() {
               (user?.role !== 'org_owner' && user?.role !== 'manager')
                 ? <Navigate to="/scan-update" replace />
                 : <Locations />
+            }
+          />
+
+          <Route
+            path="admin"
+            element={
+              user?.role !== 'super_admin'
+                ? <Navigate to="/scan-update" replace />
+                : <Admin />
             }
           />
         </Route>

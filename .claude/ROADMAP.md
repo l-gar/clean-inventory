@@ -22,13 +22,12 @@
 
 - Item transaction history (per-item timeline · location-scoped · day-grouped cards · color-coded type icons · delta chips · pull-to-refresh · History button on inventory list rows)
 - Logout with confirmation — bottom sheet in `Layout.jsx` (shows signed-in email · Sign Out + Cancel). Onboarding-flow logouts stay immediate.
+- Manager role UI refinement — BottomNav badge scoped to assigned locations · Locations page filtered to assigned only · Activity Log backend scoped by role
+- Admin page — super_admin panel · pending org approvals (approve/deny with confirmation) · all orgs list with status badges · inline member limit editor · pull-to-refresh
 
 ## In progress
 
 ## Pending
-- Admin page
-- Manager role UI refinement
-- Google Picker for existing Sheet
 
 ## Future (do not build yet)
 - Reorder / purchase orders (after per-item tracking is done)

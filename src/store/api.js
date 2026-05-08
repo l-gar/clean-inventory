@@ -239,3 +239,35 @@ export async function apiJoinOrg({ token, email }) {
   if (data.success === false) throw new Error(data.error ?? 'failed')
   return data
 }
+
+// ── Admin only ────────────────────────────────────────────────────────────────
+
+export async function apiGetPendingOrgs({ email }) {
+  const data = await callAppsScript('getPending', { email })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data.orgs ?? data.pending ?? []
+}
+
+export async function apiGetAllOrgs({ email }) {
+  const data = await callAppsScript('getAllOrgs', { email })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data.orgs ?? []
+}
+
+export async function apiApproveOrg({ email, orgId }) {
+  const data = await callAppsScript('approveOrg', { email, orgId })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
+export async function apiDenyOrg({ email, orgId }) {
+  const data = await callAppsScript('denyOrg', { email, orgId })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}
+
+export async function apiUpdateMemberLimit({ email, orgId, limit }) {
+  const data = await callAppsScript('updateMemberLimit', { email, orgId, limit })
+  if (data.success === false) throw new Error(data.error ?? 'failed')
+  return data
+}

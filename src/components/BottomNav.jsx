@@ -45,6 +45,11 @@ const NAV_ITEMS = [
   },
 ]
 
+const SUPER_ADMIN_NAV = [
+  { to: '/admin',    labelKey: 'nav.admin',    icon: <FontAwesomeIcon icon={faShieldHalved} aria-hidden="true" /> },
+  { to: '/settings', labelKey: 'nav.settings', icon: <FontAwesomeIcon icon={faGear} aria-hidden="true" /> },
+]
+
 // Routes that live under Settings and should keep it highlighted
 const SETTINGS_SUBROUTES = new Set(['/members'])
 
@@ -62,7 +67,6 @@ export default function BottomNav() {
 
   const stockAlertCount = useMemo(() => {
     if (!isOwnerOrManager) return 0
-    // Prefer the 'all' inventory; fall back to sessionStorage if current view is location-scoped
     let source = inventory
     if (inventoryLocationId !== 'all') {
       try {
@@ -70,24 +74,26 @@ export default function BottomNav() {
         source = raw ? JSON.parse(raw) : []
       } catch { source = [] }
     }
+    const isManager = user?.role === 'manager'
+    const assignedIds = isManager
+      ? new Set((user?.assignedLocations ?? []).map(String))
+      : null
     let count = 0
     for (const raw of source) {
       const item = normalizeItem(raw)
       if (!item.track_stock) continue
+      if (assignedIds && !assignedIds.has(String(item.location_id))) continue
       const tier = classifyItem(item, orgThreshold)
-      if (tier === 'out'    && alertPrefs.outOfStock) count++
-      else if (tier === 'low'    && alertPrefs.lowStock)   count++
-      else if (tier === 'reorder' && alertPrefs.reorder)   count++
+      if (tier === 'out'     && alertPrefs.outOfStock) count++
+      else if (tier === 'low'     && alertPrefs.lowStock)   count++
+      else if (tier === 'reorder' && alertPrefs.reorder)    count++
     }
     return count
-  }, [inventory, inventoryLocationId, alertPrefs, orgThreshold, isOwnerOrManager, user?.email])
+  }, [inventory, inventoryLocationId, alertPrefs, orgThreshold, isOwnerOrManager, user?.email, user?.role, user?.assignedLocations])
 
-  const visibleItems = [
-    ...NAV_ITEMS.filter((item) => !item.ownerManagerOnly || isOwnerOrManager),
-    ...(isSuperAdmin
-      ? [{ to: '/admin', labelKey: 'nav.admin', icon: <FontAwesomeIcon icon={faShieldHalved} aria-hidden="true" /> }]
-      : []),
-  ]
+  const visibleItems = isSuperAdmin
+    ? SUPER_ADMIN_NAV
+    : NAV_ITEMS.filter((item) => !item.ownerManagerOnly || isOwnerOrManager)
 
   return (
     <nav className={styles.bottomNav}>

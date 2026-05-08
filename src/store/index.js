@@ -26,7 +26,7 @@
  */
 
 import { create } from 'zustand'
-import { normalizeLocation } from '../domain/normalize'
+import { normalizeLocation, normalizeOrg } from '../domain/normalize'
 import {
   apiGetLocations,
   apiGetCatalogItems,
@@ -36,6 +36,8 @@ import {
   apiGetOrgMembers,
   apiGetActiveInvites,
   apiGetActivityLog,
+  apiGetPendingOrgs,
+  apiGetAllOrgs,
 } from './api'
 
 // ── TTL constants ─────────────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ const TTL = {
   invites:           5 * 60 * 1000,
   stockTransactions: 1 * 60 * 1000,
   activityLog:       1 * 60 * 1000,
+  pendingOrgs:       2 * 60 * 1000,
+  allOrgs:           2 * 60 * 1000,
 }
 
 function isExpired(timestamp, ttl) {
@@ -401,6 +405,52 @@ export const useStore = create((set, get) => ({
 
   invalidateActivityLog: () => set({ activityLogFetched: null }),
 
+  // ── Pending orgs (super_admin only) ─────────────────────────────────────────
+  pendingOrgs:        [],
+  pendingOrgsFetched: null,
+  pendingOrgsLoading: false,
+  pendingOrgsError:   false,
+
+  fetchPendingOrgs: async (email) => {
+    const { pendingOrgsFetched, pendingOrgsLoading, pendingOrgs } = get()
+    if (!isExpired(pendingOrgsFetched, TTL.pendingOrgs)) return pendingOrgs
+    if (pendingOrgsLoading) return pendingOrgs
+    set({ pendingOrgsLoading: true, pendingOrgsError: false })
+    try {
+      const orgs = (await apiGetPendingOrgs({ email })).map(normalizeOrg)
+      set({ pendingOrgs: orgs, pendingOrgsFetched: Date.now(), pendingOrgsLoading: false })
+      return orgs
+    } catch (err) {
+      set({ pendingOrgsError: true, pendingOrgsLoading: false })
+      throw err
+    }
+  },
+
+  invalidatePendingOrgs: () => set({ pendingOrgsFetched: null }),
+
+  // ── All orgs (super_admin only) ──────────────────────────────────────────────
+  allOrgs:        [],
+  allOrgsFetched: null,
+  allOrgsLoading: false,
+  allOrgsError:   false,
+
+  fetchAllOrgs: async (email) => {
+    const { allOrgsFetched, allOrgsLoading, allOrgs } = get()
+    if (!isExpired(allOrgsFetched, TTL.allOrgs)) return allOrgs
+    if (allOrgsLoading) return allOrgs
+    set({ allOrgsLoading: true, allOrgsError: false })
+    try {
+      const orgs = (await apiGetAllOrgs({ email })).map(normalizeOrg)
+      set({ allOrgs: orgs, allOrgsFetched: Date.now(), allOrgsLoading: false })
+      return orgs
+    } catch (err) {
+      set({ allOrgsError: true, allOrgsLoading: false })
+      throw err
+    }
+  },
+
+  invalidateAllOrgs: () => set({ allOrgsFetched: null }),
+
   // ── Clear everything (call on logout) ───────────────────────────────────────
   // Pass the logged-out user's email so the per-user UI preference stored in
   // localStorage (cleaninv_default_location_<email>) is also removed.
@@ -422,6 +472,8 @@ export const useStore = create((set, get) => ({
       stockTransactions:[], stockTransactionsFetched: null,    stockTransactionsLoading: false,  stockTransactionsError: false,   stockTransactionsLocationId: null,
       itemTransactions: [], itemTransactionsFetched: null,     itemTransactionsLoading: false,   itemTransactionsError: false,    itemTransactionsStockId: null,
       activityLog:      [], activityLogFetched: null,          activityLogLoading: false,        activityLogError: false,         activityLogLocationId: null,
+      pendingOrgs:      [], pendingOrgsFetched: null,          pendingOrgsLoading: false,        pendingOrgsError: false,
+      allOrgs:          [], allOrgsFetched: null,              allOrgsLoading: false,            allOrgsError: false,
     })
   },
 }))

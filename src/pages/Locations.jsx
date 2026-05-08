@@ -50,35 +50,46 @@ export default function Locations() {
   const [deleteError, setDeleteError] = useState(null)
 
   // Role-based permissions
-  const canEdit = user?.role === 'org_owner' || user?.role === 'manager'
+  const isManager = user?.role === 'manager'
+  const canEdit   = user?.role === 'org_owner' || isManager
   const canDelete = user?.role === 'org_owner'
 
   // ── Data loading ─────────────────────────────────────────────────────────
   // Uses the store so the result is cached and shared with other views
   // (e.g. ScanUpdate / LocationSelect). After any mutation invalidateLocations()
   // is called first so the cache is busted before re-fetching.
+  const assignedLocations = user?.assignedLocations
+
   const loadLocations = useCallback(async () => {
     setFetching(true)
     setLoadError(null)
     try {
-      const locs = await fetchLocations(user.email, user.orgId)
+      let locs = await fetchLocations(user.email, user.orgId)
+      if (isManager) {
+        const ids = new Set((assignedLocations ?? []).map(String))
+        locs = locs.filter(l => ids.has(String(l.location_id)))
+      }
       setLocations(locs)
     } catch {
       setLoadError(t('locations.error_load'))
     } finally {
       setFetching(false)
     }
-  }, [user.email, user.orgId, t, fetchLocations])
+  }, [user.email, user.orgId, t, fetchLocations, isManager, assignedLocations])
 
   useEffect(() => { loadLocations() }, [loadLocations])
 
   usePullToRefresh(useCallback(async () => {
     invalidateLocations()
     try {
-      const locs = await fetchLocations(user.email, user.orgId)
+      let locs = await fetchLocations(user.email, user.orgId)
+      if (isManager) {
+        const ids = new Set((assignedLocations ?? []).map(String))
+        locs = locs.filter(l => ids.has(String(l.location_id)))
+      }
       setLocations(locs)
     } catch {}
-  }, [invalidateLocations, fetchLocations, user.email, user.orgId]))
+  }, [invalidateLocations, fetchLocations, user.email, user.orgId, isManager, assignedLocations]))
 
   // ── Sheet helpers ─────────────────────────────────────────────────────────
   function openAdd() {

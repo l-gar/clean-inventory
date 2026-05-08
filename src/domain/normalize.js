@@ -36,6 +36,25 @@ export function normalizeActivityEntry(raw) {
   }
 }
 
+export function normalizeOrg(raw) {
+  const alertsRaw = raw.email_alerts_enabled ?? raw.emailAlertsEnabled
+  return {
+    ...raw,
+    org_id:               raw.org_id              ?? raw.orgId               ?? '',
+    org_name:             raw.org_name            ?? raw.orgName             ?? '',
+    owner_email:          raw.owner_email         ?? raw.ownerEmail          ?? '',
+    created_date:         raw.created_date        ?? raw.createdDate         ?? null,
+    member_limit:         raw.member_limit        ?? raw.memberLimit         ?? null,
+    member_count:         raw.member_count        ?? raw.memberCount         ?? null,
+    status:               raw.status              ?? '',
+    sheet_id:             raw.sheet_id            ?? raw.sheetId             ?? null,
+    email_alerts_enabled: alertsRaw === true || alertsRaw === 'TRUE' || alertsRaw === 'true',
+    low_stock_threshold:  raw.low_stock_threshold != null ? Number(raw.low_stock_threshold)
+                        : raw.lowStockThreshold   != null ? Number(raw.lowStockThreshold)
+                        : null,
+  }
+}
+
 export function normalizeItem(raw) {
   return {
     ...raw,
