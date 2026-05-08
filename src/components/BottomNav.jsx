@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -10,6 +11,9 @@ import {
   faShieldHalved,
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
+import { useStore } from '../store'
+import { normalizeItem } from '../domain/normalize'
+import { classifyItem } from '../utils/stockHealth'
 import styles from './BottomNav.module.css'
 
 const NAV_ITEMS = [
@@ -51,6 +55,33 @@ export default function BottomNav() {
   const isSuperAdmin = user?.role === 'super_admin'
   const isOwnerOrManager = user?.role === 'org_owner' || user?.role === 'manager'
 
+  const inventory           = useStore((s) => s.inventory)
+  const inventoryLocationId = useStore((s) => s.inventoryLocationId)
+  const alertPrefs          = useStore((s) => s.alertPrefs)
+  const orgThreshold = Number(user?.low_stock_threshold ?? user?.lowStockThreshold ?? 0)
+
+  const stockAlertCount = useMemo(() => {
+    if (!isOwnerOrManager) return 0
+    // Prefer the 'all' inventory; fall back to sessionStorage if current view is location-scoped
+    let source = inventory
+    if (inventoryLocationId !== 'all') {
+      try {
+        const raw = sessionStorage.getItem(`cleaninv_inventory_${user?.email}_all`)
+        source = raw ? JSON.parse(raw) : []
+      } catch { source = [] }
+    }
+    let count = 0
+    for (const raw of source) {
+      const item = normalizeItem(raw)
+      if (!item.track_stock) continue
+      const tier = classifyItem(item, orgThreshold)
+      if (tier === 'out'    && alertPrefs.outOfStock) count++
+      else if (tier === 'low'    && alertPrefs.lowStock)   count++
+      else if (tier === 'reorder' && alertPrefs.reorder)   count++
+    }
+    return count
+  }, [inventory, inventoryLocationId, alertPrefs, orgThreshold, isOwnerOrManager, user?.email])
+
   const visibleItems = [
     ...NAV_ITEMS.filter((item) => !item.ownerManagerOnly || isOwnerOrManager),
     ...(isSuperAdmin
@@ -60,21 +91,26 @@ export default function BottomNav() {
 
   return (
     <nav className={styles.bottomNav}>
-      {visibleItems.map(({ to, labelKey, icon, badge }) => (
-        <NavLink
-          key={to}
-          to={to}
-          className={({ isActive }) =>
-            `${styles.navItem} ${isActive || (to === '/settings' && SETTINGS_SUBROUTES.has(pathname)) ? styles.navItemActive : ''}`
-          }
-        >
-          <span className={styles.navIcon}>
-            {icon}
-            {badge && <span className={styles.badge}>{badge}</span>}
-          </span>
-          <span className={styles.navLabel}>{t(labelKey)}</span>
-        </NavLink>
-      ))}
+      {visibleItems.map(({ to, labelKey, icon }) => {
+        const badge = to === '/stock-health' && stockAlertCount > 0
+          ? (stockAlertCount > 99 ? '99+' : stockAlertCount)
+          : null
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive || (to === '/settings' && SETTINGS_SUBROUTES.has(pathname)) ? styles.navItemActive : ''}`
+            }
+          >
+            <span className={styles.navIcon}>
+              {icon}
+              {badge !== null && <span className={styles.badge}>{badge}</span>}
+            </span>
+            <span className={styles.navLabel}>{t(labelKey)}</span>
+          </NavLink>
+        )
+      })}
     </nav>
   )
 }

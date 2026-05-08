@@ -26,6 +26,7 @@
  */
 
 import { create } from 'zustand'
+import { normalizeLocation } from '../domain/normalize'
 import {
   apiGetLocations,
   apiGetCatalogItems,
@@ -103,17 +104,20 @@ function clearLocalKeysByPrefix(prefix) {
 }
 function clearAllInventoryLocalKeys() { clearLocalKeysByPrefix('cleaninv_inv_local_') }
 
-// Normalize a location entry to { location_id, location_name }.
-// Handles both snake_case and camelCase field names from Apps Script.
-function normalizeLocation(l) {
-  if (typeof l === 'string') return { location_id: l, location_name: l }
-  const id   = l.location_id   ?? l.locationId   ?? l.id
-  const name = l.location_name ?? l.locationName ?? l.name ?? id ?? String(l)
-  return { location_id: String(id ?? l), location_name: String(name) }
-}
-
 // ── Store ─────────────────────────────────────────────────────────────────────
 export const useStore = create((set, get) => ({
+
+  // ── Alert preferences (persisted to localStorage) ────────────────────────────
+  alertPrefs: {
+    lowStock:   localStorage.getItem('cleaninv_lowStockAlerts')   !== 'false',
+    outOfStock: localStorage.getItem('cleaninv_outOfStockAlerts') !== 'false',
+    reorder:    localStorage.getItem('cleaninv_reorderAlerts')    !== 'false',
+  },
+
+  setAlertPref: (key, val) => {
+    localStorage.setItem(`cleaninv_${key}Alerts`, String(val))
+    set((s) => ({ alertPrefs: { ...s.alertPrefs, [key]: val } }))
+  },
 
   // ── Locations ───────────────────────────────────────────────────────────────
   locations:        [],

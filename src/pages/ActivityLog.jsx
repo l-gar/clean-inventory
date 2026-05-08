@@ -10,6 +10,8 @@ import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { useLocations } from '../hooks/useLocations'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { displayName } from '../utils/avatar'
+import { isToday, groupByDay } from '../utils/date'
 import LoadingScreen from '../components/LoadingScreen'
 import InlineLoader from '../components/InlineLoader'
 import EmptyState from '../components/EmptyState'
@@ -46,59 +48,11 @@ const ORG_ACTIONS   = new Set(['member_added', 'member_removed', 'location_assig
 const CATEGORIES    = ['all', 'stock', 'items', 'org']
 const PAGE_SIZE     = 50
 
-function displayName(email) {
-  const local = (email ?? '').split('@')[0]
-  return local.split(/[._+]/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
-}
-
 function formatTime(ts, language) {
   if (!ts) return ''
   const d = new Date(ts)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleTimeString(language, { hour: 'numeric', minute: '2-digit', hour12: true })
-}
-
-function dayKey(ts) {
-  const d = new Date(ts)
-  if (isNaN(d.getTime())) return 'unknown'
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function dayLabel(ts, t, language) {
-  const d = new Date(ts)
-  if (isNaN(d.getTime())) return ''
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
-  const dDay = new Date(d); dDay.setHours(0, 0, 0, 0)
-  if (dDay.getTime() === today.getTime()) return t('activity_log.date_group_today')
-  if (dDay.getTime() === yesterday.getTime()) return t('activity_log.date_group_yesterday')
-  return d.toLocaleDateString(language, { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function isToday(ts) {
-  const d = new Date(ts)
-  if (isNaN(d.getTime())) return false
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const dDay = new Date(d); dDay.setHours(0, 0, 0, 0)
-  return dDay.getTime() === today.getTime()
-}
-
-function groupByDay(entries, t, language) {
-  const groups = []
-  let curKey = null, curGroup = null
-  for (const e of entries) {
-    const key = dayKey(e.timestamp)
-    if (key !== curKey) {
-      curKey = key
-      curGroup = { key, label: dayLabel(e.timestamp, t, language), entries: [] }
-      groups.push(curGroup)
-    }
-    curGroup.entries.push(e)
-  }
-  return groups
 }
 
 function SummaryBar({ entries, t }) {
@@ -347,8 +301,9 @@ export default function ActivityLog() {
   const fetchStockTransactions   = useStore(s => s.fetchStockTransactions)
   const invalidateStockTx        = useStore(s => s.invalidateStockTransactions)
 
-  const catalog      = useStore(s => s.catalog)
-  const fetchCatalog = useStore(s => s.fetchCatalog)
+  const catalog        = useStore(s => s.catalog)
+  const catalogFetched = useStore(s => s.catalogFetched)
+  const fetchCatalog   = useStore(s => s.fetchCatalog)
 
   const [tab,           setTab]           = useState('activity')
   const [category,      setCategory]      = useState('all')
@@ -381,9 +336,9 @@ export default function ActivityLog() {
   useEffect(() => {
     if (tab === 'transactions') {
       loadTx()
-      if (user) fetchCatalog(user.email, user.orgId)
+      if (user && !catalogFetched) fetchCatalog(user.email, user.orgId).catch(() => {})
     }
-  }, [tab, loadTx, fetchCatalog, user])
+  }, [tab, loadTx, fetchCatalog, catalogFetched, user])
 
   usePullToRefresh(useCallback(async () => {
     if (tab === 'activity') {
@@ -444,8 +399,8 @@ export default function ActivityLog() {
   const txHasStale    = stockTransactions.length > 0
   const txIsFirstLoad = !txHasStale && !stockTransactionsFetched
 
-  if (tab === 'activity'     && isFirstLoad   && activityLogLoading)        return <LoadingScreen />
-  if (tab === 'transactions' && txIsFirstLoad && stockTransactionsLoading)  return <LoadingScreen />
+  if (tab === 'activity'     && isFirstLoad   && activityLogLoading)        return <LoadingScreen message={t('activity_log.loading')} />
+  if (tab === 'transactions' && txIsFirstLoad && stockTransactionsLoading)  return <LoadingScreen message={t('activity_log.tx_loading')} />
 
   function resetLimit() { setLimit(PAGE_SIZE) }
 

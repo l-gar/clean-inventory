@@ -81,6 +81,16 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 - Arrow: `::before` pseudo-element at `top: -5px; left: 6px`, rotated 45°, matching `background` and `border-top/border-left` of the tooltip
 - Canonical implementation: `src/components/StockSettings.jsx` + `src/components/StockSettings.module.css`
 
+## Collapsible sections
+- Animation: `display: grid; grid-template-rows: 1fr` → `0fr` on the wrapper; inner div has `overflow: hidden` — never use `max-height` or JS-measured heights
+- Three-layer structure: `.wrap` (grid, transition) → `.inner` (overflow hidden) → content
+- Section header: `position: sticky; top: 0; background: var(--color-page)` so it pins while scrolling; use `position: sticky` (not `relative`) so it still acts as a containing block
+- Inset divider line: `::after` pseudo on the header with `position: absolute; bottom: 0; left: 16px; right: 16px; height: 1px; background: var(--gray-100)` — never a full-bleed `border-bottom`
+- Breathing room: `padding-top: 8px` on the `.inner` div so the first card breathes below the line; this padding collapses to zero automatically when collapsed (clipped by `overflow: hidden`)
+- Count badge: pill chip — `background: var(--gray-100); color: var(--gray-500); padding: 2px 7px; border-radius: 99px; font-size: 11px; font-weight: 800`
+- Chevron rotation: `transition: transform 0.2s` with `rotate(-90deg)` when collapsed
+- Canonical implementations: `StockHealth.jsx/.module.css`, `ActivityLog.jsx/.module.css`, `ItemHistory.jsx/.module.css`
+
 ## Shared UI components
 - Error states → `ErrorState` (`src/components/ErrorState.jsx`): `variant="banner"` (red inline, e.g. InventoryList) or default centered (e.g. MembersPage, Locations)
 - Empty/no-data states → `EmptyState` (`src/components/EmptyState.jsx`): pass `icon`, `title`, optional `body`/`hint`/`action`; use `iconCircle` for prominent full-page empty states, `fill` for full-height centering
@@ -99,6 +109,7 @@ React+Vite · GitHub Pages · HashRouter · react-i18next · Google OAuth · She
 1. Org's own inventory sheet → 2. product_cache (master sheet) → 3. UPCitemdb proxy → 4. Open Food Facts → 5. Manual entry
 
 ## See also
+- .claude/STRUCTURE.md — full file-by-file navigation map (start here)
 - .claude/ARCHITECTURE.md — stack details, evolution plan
 - .claude/AUTH.md — roles, permissions, invite system  
 - .claude/SCHEMA.md — all Sheet tab column definitions

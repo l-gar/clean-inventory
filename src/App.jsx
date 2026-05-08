@@ -1,23 +1,24 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { callAppsScript } from './utils/appsScript'
 import Layout from './components/Layout'
 import LoadingScreen from './components/LoadingScreen'
-import ScanUpdate from './pages/ScanUpdate'
-import InventoryList from './pages/InventoryList'
-import StockHealth from './pages/StockHealth'
-import Settings from './pages/Settings'
-import Login from './pages/Login'
-import PendingApproval from './pages/PendingApproval'
-import RegisterOrg from './pages/RegisterOrg'
-import ConnectSheet from './pages/ConnectSheet'
-import Locations from './pages/Locations'
-import EditItem from './pages/EditItem'
-import MembersPage from './pages/MembersPage'
-import ActivityLog from './pages/ActivityLog'
-import ItemHistory from './pages/ItemHistory'
-import JoinPage from './pages/JoinPage'
+
+const ScanUpdate      = lazy(() => import('./pages/ScanUpdate'))
+const InventoryList   = lazy(() => import('./pages/InventoryList'))
+const StockHealth     = lazy(() => import('./pages/StockHealth'))
+const Settings        = lazy(() => import('./pages/Settings'))
+const Login           = lazy(() => import('./pages/Login'))
+const PendingApproval = lazy(() => import('./pages/PendingApproval'))
+const RegisterOrg     = lazy(() => import('./pages/RegisterOrg'))
+const ConnectSheet    = lazy(() => import('./pages/ConnectSheet'))
+const Locations       = lazy(() => import('./pages/Locations'))
+const EditItem        = lazy(() => import('./pages/EditItem'))
+const MembersPage     = lazy(() => import('./pages/MembersPage'))
+const ActivityLog     = lazy(() => import('./pages/ActivityLog'))
+const ItemHistory     = lazy(() => import('./pages/ItemHistory'))
+const JoinPage        = lazy(() => import('./pages/JoinPage'))
 
 function App() {
   const { user, loading, hasLocations, setHasLocations } = useAuth()
@@ -72,117 +73,120 @@ function App() {
   // console.log('[App]   needsLocations   →', needsLocations)
 
   return (
-    <Routes>
-      {/*
-        /login — redirect away based on the user's exact state.
-        Role-aware redirect prevents loops: see routing comments in App history.
-      */}
-      <Route
-        path="/login"
-        element={
-          !user                        ? <Login /> :
-          user.role === 'pending'      ? <Navigate to="/pending" replace /> :
-          user.role === 'new_user'     ? <Navigate to="/register-org" replace /> :
-          needsSheet                   ? <Navigate to="/connect-sheet" replace /> :
-          needsLocations               ? <Navigate to="/locations" replace /> :
-                                         <Navigate to="/scan-update" replace />
-        }
-      />
-
-      {/* Pending approval */}
-      <Route
-        path="/pending"
-        element={
-          !user                        ? <Navigate to="/login" replace /> :
-          user.role !== 'pending'      ? <Navigate to="/scan-update" replace /> :
-                                         <PendingApproval />
-        }
-      />
-
-      {/* New user — register org */}
-      <Route
-        path="/register-org"
-        element={
-          !user                        ? <Navigate to="/login" replace /> :
-          user.role === 'pending'      ? <Navigate to="/pending" replace /> :
-          user.role !== 'new_user'     ? <Navigate to="/scan-update" replace /> :
-                                         <RegisterOrg />
-        }
-      />
-
-      {/* Approved org_owner — connect Google Sheet */}
-      <Route
-        path="/connect-sheet"
-        element={
-          !user                        ? <Navigate to="/login" replace /> :
-          !needsSheet                  ? <Navigate to="/scan-update" replace /> :
-                                         <ConnectSheet />
-        }
-      />
-
-      {/*
-        Locations gate — only present when the user has no locations yet.
-        Rendered outside Layout so it shows its own standalone header with
-        no bottom navigation (the user can't use the app yet).
-        Once the first location is saved hasLocations flips to true, this
-        route unmounts, and /locations is served by the Layout child below.
-      */}
-      {needsLocations && (
-        <Route path="/locations" element={<Locations />} />
-      )}
-
-      {/* Public join route — accessible without auth */}
-      <Route path="/join" element={<JoinPage />} />
-
-      {/*
-        Main app — any authenticated user whose role is not a holding state
-        reaches Layout. The needsSheet and needsLocations guards intercept
-        users who have outstanding setup steps.
-      */}
-      <Route
-        path="/"
-        element={
-          !user                        ? <Navigate to="/login" replace /> :
-          user.role === 'pending'      ? <Navigate to="/pending" replace /> :
-          user.role === 'new_user'     ? <Navigate to="/register-org" replace /> :
-          needsSheet                   ? <Navigate to="/connect-sheet" replace /> :
-          needsLocations               ? <Navigate to="/locations" replace /> :
-                                         <Layout />
-        }
-      >
-        <Route index element={<Navigate to={needsLocations ? '/locations' : '/scan-update'} replace />} />
-        <Route path="scan-update" element={needsLocations ? <Navigate to="/locations" replace /> : <ScanUpdate />} />
-        <Route path="edit/:itemId" element={needsLocations ? <Navigate to="/locations" replace /> : <EditItem />} />
-        <Route path="inventory" element={needsLocations ? <Navigate to="/locations" replace /> : <InventoryList />} />
-        <Route path="stock-health" element={needsLocations ? <Navigate to="/locations" replace /> : <StockHealth />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="activity-log" element={<ActivityLog />} />
-        <Route path="item/:stockId/history" element={<ItemHistory />} />
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        {/*
+          /login — redirect away based on the user's exact state.
+          Role-aware redirect prevents loops: see routing comments in App history.
+        */}
         <Route
-          path="members"
+          path="/login"
           element={
-            (user?.role !== 'org_owner' && user?.role !== 'manager')
-              ? <Navigate to="/scan-update" replace />
-              : <MembersPage />
+            !user                        ? <Login /> :
+            user.role === 'pending'      ? <Navigate to="/pending" replace /> :
+            user.role === 'new_user'     ? <Navigate to="/register-org" replace /> :
+            needsSheet                   ? <Navigate to="/connect-sheet" replace /> :
+            needsLocations               ? <Navigate to="/locations" replace /> :
+                                          <Navigate to="/scan-update" replace />
+          }
+        />
+
+        {/* Pending approval */}
+        <Route
+          path="/pending"
+          element={
+            !user                        ? <Navigate to="/login" replace /> :
+            user.role !== 'pending'      ? <Navigate to="/scan-update" replace /> :
+                                          <PendingApproval />
+          }
+        />
+
+        {/* New user — register org */}
+        <Route
+          path="/register-org"
+          element={
+            !user                        ? <Navigate to="/login" replace /> :
+            user.role === 'pending'      ? <Navigate to="/pending" replace /> :
+            user.role !== 'new_user'     ? <Navigate to="/scan-update" replace /> :
+                                          <RegisterOrg />
+          }
+        />
+
+        {/* Approved org_owner — connect Google Sheet */}
+        <Route
+          path="/connect-sheet"
+          element={
+            !user                        ? <Navigate to="/login" replace /> :
+            !needsSheet                  ? <Navigate to="/scan-update" replace /> :
+                                          <ConnectSheet />
           }
         />
 
         {/*
-          Locations management — accessible from Settings once the user has
-          locations. Rendered inside Layout so it shares the header and
-          bottom navigation like every other app page.
-          org_member is redirected away — they don't manage locations.
+          Locations gate — only present when the user has no locations yet.
+          Rendered outside Layout so it shows its own standalone header with
+          no bottom navigation (the user can't use the app yet).
+          Once the first location is saved hasLocations flips to true, this
+          route unmounts, and /locations is served by the Layout child below.
+        */}
+        {needsLocations && (
+          <Route path="/locations" element={<Locations />} />
+        )}
+
+        {/* Public join route — accessible without auth */}
+        <Route path="/join" element={<JoinPage />} />
+
+        {/*
+          Main app — any authenticated user whose role is not a holding state
+          reaches Layout. The needsSheet and needsLocations guards intercept
+          users who have outstanding setup steps.
         */}
         <Route
-          path="locations"
+          path="/"
           element={
-            (user?.role !== 'org_owner' && user?.role !== 'manager')
-              ? <Navigate to="/scan-update" replace />
-              : <Locations />
+            !user                        ? <Navigate to="/login" replace /> :
+            user.role === 'pending'      ? <Navigate to="/pending" replace /> :
+            user.role === 'new_user'     ? <Navigate to="/register-org" replace /> :
+            needsSheet                   ? <Navigate to="/connect-sheet" replace /> :
+            needsLocations               ? <Navigate to="/locations" replace /> :
+                                          <Layout />
           }
-        />
-      </Route>
-    </Routes>
+        >
+          {/* needsLocations pages require at least one location to function. */}
+          <Route index element={<Navigate to={needsLocations ? '/locations' : '/scan-update'} replace />} />
+          <Route path="scan-update" element={needsLocations ? <Navigate to="/locations" replace /> : <ScanUpdate />} />
+          <Route path="edit/:itemId" element={needsLocations ? <Navigate to="/locations" replace /> : <EditItem />} />
+          <Route path="inventory" element={needsLocations ? <Navigate to="/locations" replace /> : <InventoryList />} />
+          <Route path="stock-health" element={needsLocations ? <Navigate to="/locations" replace /> : <StockHealth />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="activity-log" element={<ActivityLog />} />
+          <Route path="item/:stockId/history" element={<ItemHistory />} />
+          <Route
+            path="members"
+            element={
+              (user?.role !== 'org_owner' && user?.role !== 'manager')
+                ? <Navigate to="/scan-update" replace />
+                : <MembersPage />
+            }
+          />
+
+          {/*
+            Locations management — accessible from Settings once the user has
+            locations. Rendered inside Layout so it shares the header and
+            bottom navigation like every other app page.
+            org_member is redirected away — they don't manage locations.
+          */}
+          <Route
+            path="locations"
+            element={
+              (user?.role !== 'org_owner' && user?.role !== 'manager')
+                ? <Navigate to="/scan-update" replace />
+                : <Locations />
+            }
+          />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

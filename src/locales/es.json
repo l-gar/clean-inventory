@@ -87,6 +87,7 @@
   "note_label": "Nota",
   "note_placeholder": "Nota opcional…",
   "clear": "Limpiar",
+  "logout_confirm_title": "¿Cerrar Sesión?",
   "save_item": "Guardar Artículo",
   "item_saved": "Artículo \"{{name}}\" guardado (backend no conectado aún)",
   "nav": {
@@ -136,6 +137,7 @@
   },
   "item_history": {
     "title": "Historial del Artículo",
+    "loading": "Cargando historial…",
     "n_transactions": "{{count}} transacciones",
     "empty_title": "Sin transacciones aún",
     "empty_body": "Los cambios de stock para este artículo aparecerán aquí.",
@@ -159,6 +161,7 @@
   },
   "stock_health": {
     "title": "Salud de Stock",
+    "loading": "Cargando salud de stock…",
     "subtitle": "Artículos que necesitan tu atención",
     "outOfStock": "Sin Stock",
     "lowStock": "Stock Bajo",
@@ -384,6 +387,8 @@
       "lowStockDesc": "Notificar cuando los artículos estén por debajo del mínimo",
       "outOfStock": "Alertas Sin Stock",
       "outOfStockDesc": "Notificar cuando los artículos lleguen a cero",
+      "reorderPoints": "Alertas de Punto de Reorden",
+      "reorderPointsDesc": "Incluir artículos bajo el punto de reorden en el conteo",
       "threshold": "Umbral de Stock Bajo",
       "thresholdDesc": "Advertir cuando la cantidad esté en o por debajo de este %",
       "thresholdError": "ES: Failed to save threshold"
@@ -424,6 +429,8 @@
     "n_transactions": "{{count}} transacciones",
     "tab_activity": "Eventos",
     "tab_transactions": "Transacciones",
+    "loading": "Cargando actividad…",
+    "tx_loading": "Cargando transacciones…",
     "tx_empty_title": "Sin transacciones aún",
     "tx_empty_body": "Los cambios de stock aparecerán aquí.",
     "tx_error": "No se pudieron cargar las transacciones.",

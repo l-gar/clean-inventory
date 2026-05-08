@@ -18,7 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { normalizeItem } from '../domain/normalize'
-import { computeStockHealth } from '../utils/stockHealth'
+import { computeStockHealth, effectiveThreshold, classifyItem } from '../utils/stockHealth'
 import { formatDate } from '../utils/date'
 import LoadingScreen from '../components/LoadingScreen'
 import InlineLoader from '../components/InlineLoader'
@@ -42,26 +42,6 @@ function readSessionLocations(email) {
   } catch { return null }
 }
 
-function effectiveThreshold(item, orgThresholdPct) {
-  const itemThreshold = Number(item.lowStockThreshold ?? 0)
-  if (itemThreshold > 0) return itemThreshold
-  const pct = Number(orgThresholdPct ?? 0)
-  if (pct <= 0) return 0
-  // orgThresholdPct is a percentage; apply to resolved target qty, default 100
-  const targetQty = Number(item.resolvedTargetQty ?? item.targetQuantity ?? 0) || 100
-  return Math.round(pct / 100 * targetQty)
-}
-
-function classifyItem(item, orgThreshold) {
-  const qty = Number(item.quantity)
-  if (qty === 0) return 'out'
-  const threshold = effectiveThreshold(item, orgThreshold)
-  if (threshold > 0 && qty <= threshold) return 'low'
-  const rp = Number(item.reorder_point ?? 0)
-  if (rp > 0 && qty <= rp) return 'reorder'
-  return null
-}
-
 function Section({ tier, items, icon, label, orgThreshold, collapsed, onToggle }) {
   return (
     <div className={styles.section}>
@@ -82,14 +62,18 @@ function Section({ tier, items, icon, label, orgThreshold, collapsed, onToggle }
           aria-hidden="true"
         />
       </button>
-      {!collapsed && items.map((item) => (
-        <ItemCard
-          key={`${item.itemId}_${item.location_id}`}
-          item={item}
-          tier={tier}
-          orgThreshold={orgThreshold}
-        />
-      ))}
+      <div className={`${styles.sectionBodyWrap} ${collapsed ? styles.sectionBodyCollapsed : ''}`}>
+        <div className={styles.sectionBodyInner}>
+          {items.map((item) => (
+            <ItemCard
+              key={`${item.itemId}_${item.location_id}`}
+              item={item}
+              tier={tier}
+              orgThreshold={orgThreshold}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -242,7 +226,7 @@ export default function StockHealth() {
 
   const hasStaleData = items.length > 0 || localLocations.length > 0
   const isFirstLoad  = !hasStaleData && !inventoryFetched
-  if (isFirstLoad) return <LoadingScreen />
+  if (isFirstLoad) return <LoadingScreen message={t('stock_health.loading')} />
 
   const isRefreshing = (inventoryLoading || locationsLoading) && hasStaleData
 

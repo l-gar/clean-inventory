@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  faArrowTrendDown,
   faBell,
   faBuilding,
   faCheck,
@@ -17,19 +18,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { useAuth } from '../context/AuthContext'
 import { useLocations } from '../hooks/useLocations'
+import { useStore } from '../store'
 import { apiUpdateOrgName, apiUpdateThreshold } from '../store/api'
-import { getAvatarColors, getInitials } from '../utils/avatar'
+import { getAvatarColors, getInitials, displayName } from '../utils/avatar'
 import { version } from '../../package.json'
 import styles from './Settings.module.css'
-
-function getDisplayName(email) {
-  const local = (email ?? '').split('@')[0]
-  return local
-    .split(/[._+]/)
-    .filter(Boolean)
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(' ')
-}
 
 // ── primitives ────────────────────────────────────────────────────────────────
 
@@ -132,6 +125,9 @@ export default function Settings() {
   const { locations } = useLocations()
   const [lang, setLang] = useState(i18n.language)
 
+  const alertPrefs   = useStore((s) => s.alertPrefs)
+  const setAlertPref = useStore((s) => s.setAlertPref)
+
   const isOwner = user?.role === 'org_owner'
   const canManageLocations = user?.role === 'org_owner' || user?.role === 'manager'
 
@@ -183,21 +179,13 @@ export default function Settings() {
   const defaultLocationName =
     locations.find((l) => l.location_id === defaultLocation)?.location_name ?? ''
 
-  // ── Prefs (toggles) ───────────────────────────────────────────────────────
-  const [prefs, setPrefs] = useState(() => ({
-    lowStockAlerts: true,
-    outOfStockAlerts: true,
-    darkMode: localStorage.getItem('darkMode') === 'true',
-  }))
+  // ── Prefs (local — display only) ──────────────────────────────────────────
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true')
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', prefs.darkMode)
-    localStorage.setItem('darkMode', prefs.darkMode)
-  }, [prefs.darkMode])
-
-  function set(key) {
-    return (val) => setPrefs((p) => ({ ...p, [key]: val }))
-  }
+    document.documentElement.classList.toggle('dark', darkMode)
+    localStorage.setItem('darkMode', darkMode)
+  }, [darkMode])
 
   // ── Language ──────────────────────────────────────────────────────────────
   function handleLangChange(e) {
@@ -241,7 +229,7 @@ export default function Settings() {
         <div className={styles.profileRow}>
           <div className={styles.avatar} style={getAvatarColors(user?.email ?? '')}>{getInitials(user?.email)}</div>
           <div className={styles.profileInfo}>
-            <div className={styles.profileName}>{getDisplayName(user?.email)}</div>
+            <div className={styles.profileName}>{displayName(user?.email)}</div>
             <div className={styles.profileEmail}>{user?.email}</div>
           </div>
           <div className={styles.profileMeta}>
@@ -398,7 +386,7 @@ export default function Settings() {
                 <span className={styles.rowLabel}>{t('settings.alerts.lowStock')}</span>
                 <span className={styles.rowDesc}>{t('settings.alerts.lowStockDesc')}</span>
               </div>
-              <Toggle checked={prefs.lowStockAlerts} onChange={set('lowStockAlerts')} />
+              <Toggle checked={alertPrefs.lowStock} onChange={(val) => setAlertPref('lowStock', val)} />
             </div>
 
             <Divider />
@@ -409,7 +397,18 @@ export default function Settings() {
                 <span className={styles.rowLabel}>{t('settings.alerts.outOfStock')}</span>
                 <span className={styles.rowDesc}>{t('settings.alerts.outOfStockDesc')}</span>
               </div>
-              <Toggle checked={prefs.outOfStockAlerts} onChange={set('outOfStockAlerts')} />
+              <Toggle checked={alertPrefs.outOfStock} onChange={(val) => setAlertPref('outOfStock', val)} />
+            </div>
+
+            <Divider />
+
+            <div className={styles.row}>
+              <IconBadge icon={faArrowTrendDown} bg="var(--violet-50)" fg="var(--violet-600)" />
+              <div className={styles.rowText}>
+                <span className={styles.rowLabel}>{t('settings.alerts.reorderPoints')}</span>
+                <span className={styles.rowDesc}>{t('settings.alerts.reorderPointsDesc')}</span>
+              </div>
+              <Toggle checked={alertPrefs.reorder} onChange={(val) => setAlertPref('reorder', val)} />
             </div>
 
             {isOwner && (
@@ -464,7 +463,7 @@ export default function Settings() {
                 <span className={styles.rowLabel}>{t('settings.display.darkMode')}</span>
                 <span className={styles.rowDesc}>{t('settings.display.darkModeDesc')}</span>
               </div>
-              <Toggle checked={prefs.darkMode} onChange={set('darkMode')} />
+              <Toggle checked={darkMode} onChange={setDarkMode} />
             </div>
           </div>
         </div>

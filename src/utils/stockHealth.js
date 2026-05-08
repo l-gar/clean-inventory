@@ -1,4 +1,30 @@
 /**
+ * Returns the effective low-stock threshold for an item.
+ * Item-level threshold takes precedence; falls back to org percentage applied to target qty.
+ */
+export function effectiveThreshold(item, orgThresholdPct) {
+  const itemThreshold = Number(item.lowStockThreshold ?? 0)
+  if (itemThreshold > 0) return itemThreshold
+  const pct = Number(orgThresholdPct ?? 0)
+  if (pct <= 0) return 0
+  const targetQty = Number(item.resolvedTargetQty ?? item.targetQuantity ?? 0) || 100
+  return Math.round(pct / 100 * targetQty)
+}
+
+/**
+ * Classifies a normalized item as 'out', 'low', 'reorder', or null (healthy).
+ */
+export function classifyItem(item, orgThreshold) {
+  const qty = Number(item.quantity)
+  if (qty === 0) return 'out'
+  const threshold = effectiveThreshold(item, orgThreshold)
+  if (threshold > 0 && qty <= threshold) return 'low'
+  const rp = Number(item.reorder_point ?? 0)
+  if (rp > 0 && qty <= rp) return 'reorder'
+  return null
+}
+
+/**
  * Computes derived stock health metrics from a normalized item.
  */
 export function computeStockHealth(stock) {

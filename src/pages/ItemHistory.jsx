@@ -10,6 +10,8 @@ import { useAuth } from '../context/AuthContext'
 import { useStore } from '../store'
 import { useLocations } from '../hooks/useLocations'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
+import { displayName } from '../utils/avatar'
+import { groupByDay } from '../utils/date'
 import LoadingScreen from '../components/LoadingScreen'
 import InlineLoader from '../components/InlineLoader'
 import EmptyState from '../components/EmptyState'
@@ -27,48 +29,11 @@ const TYPE_CONFIG = {
 }
 const DEFAULT_CONFIG = { icon: faClockRotateLeft, mod: 'gray' }
 
-function displayName(email) {
-  const local = (email ?? '').split('@')[0]
-  return local.split(/[._+]/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
-}
-
 function formatTime(ts, language) {
   if (!ts) return ''
   const d = new Date(ts)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleTimeString(language, { hour: 'numeric', minute: '2-digit', hour12: true })
-}
-
-function dayKey(ts) {
-  const d = new Date(ts)
-  if (isNaN(d.getTime())) return 'unknown'
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function dayLabel(ts, t, language) {
-  const d = new Date(ts)
-  if (isNaN(d.getTime())) return ''
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1)
-  const dDay = new Date(d); dDay.setHours(0, 0, 0, 0)
-  if (dDay.getTime() === today.getTime()) return t('activity_log.date_group_today')
-  if (dDay.getTime() === yesterday.getTime()) return t('activity_log.date_group_yesterday')
-  return d.toLocaleDateString(language, { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function groupByDay(entries, t, language) {
-  const groups = []
-  let curKey = null, curGroup = null
-  for (const e of entries) {
-    const key = dayKey(e.timestamp)
-    if (key !== curKey) {
-      curKey = key
-      curGroup = { key, label: dayLabel(e.timestamp, t, language), entries: [] }
-      groups.push(curGroup)
-    }
-    curGroup.entries.push(e)
-  }
-  return groups
 }
 
 function TransactionEntry({ tx, language, t }) {
@@ -152,7 +117,7 @@ export default function ItemHistory() {
   const hasStale    = transactions.length > 0
   const isFirstLoad = !hasStale && !fetched
 
-  if (isFirstLoad && loading) return <LoadingScreen />
+  if (isFirstLoad && loading) return <LoadingScreen message={t('item_history.loading')} />
 
   return (
     <div className={styles.page}>

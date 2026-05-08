@@ -125,7 +125,24 @@
 .section {
   display: flex;
   flex-direction: column;
+}
+
+.sectionBodyWrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.sectionBodyCollapsed {
+  grid-template-rows: 0fr;
+}
+
+.sectionBodyInner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  padding-top: 8px;
 }
 
 .sectionHeader {

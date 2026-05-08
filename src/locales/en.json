@@ -87,6 +87,7 @@
   "note_label": "Note",
   "note_placeholder": "Optional note…",
   "clear": "Clear",
+  "logout_confirm_title": "Sign Out?",
   "save_item": "Save Item",
   "item_saved": "Item \"{{name}}\" saved (backend not connected yet)",
   "nav": {
@@ -136,6 +137,7 @@
   },
   "item_history": {
     "title": "Item History",
+    "loading": "Loading history…",
     "n_transactions": "{{count}} transactions",
     "empty_title": "No transactions yet",
     "empty_body": "Stock changes for this item will appear here.",
@@ -159,6 +161,7 @@
   },
   "stock_health": {
     "title": "Stock Health",
+    "loading": "Loading stock health…",
     "subtitle": "Items that need your attention",
     "outOfStock": "Out of Stock",
     "lowStock": "Low Stock",
@@ -384,6 +387,8 @@
       "lowStockDesc": "Notify when items fall below minimum",
       "outOfStock": "Out of Stock Alerts",
       "outOfStockDesc": "Notify when items reach zero",
+      "reorderPoints": "Reorder Point Alerts",
+      "reorderPointsDesc": "Include items below reorder point in count",
       "threshold": "Low Stock Threshold",
       "thresholdDesc": "Warn when quantity is at or below this %",
       "thresholdError": "Failed to save threshold"
@@ -427,6 +432,8 @@
     "tx_empty_title": "No transactions yet",
     "tx_empty_body": "Stock changes will appear here.",
     "tx_error": "Could not load transactions.",
+    "loading": "Loading activity…",
+    "tx_loading": "Loading transactions…",
     "filter_all": "All",
     "filter_stock": "Stock",
     "filter_items": "Items",

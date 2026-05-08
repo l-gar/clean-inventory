@@ -14,7 +14,8 @@ const PULL_RESIST    = 0.45
 
 export default function Layout() {
   const { t } = useTranslation()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
+  const [logoutSheetOpen, setLogoutSheetOpen] = useState(false)
 
   const mainRef         = useRef(null)
   const refreshCbRef    = useRef(null)
@@ -108,7 +109,7 @@ export default function Layout() {
             <button
               type="button"
               className={styles.logoutBtn}
-              onClick={logout}
+              onClick={() => setLogoutSheetOpen(true)}
               aria-label={t('nav.logout')}
               title={t('nav.logout')}
             >
@@ -133,6 +134,41 @@ export default function Layout() {
         </main>
 
         <BottomNav />
+
+        <div
+          className={`${styles.backdrop} ${logoutSheetOpen ? styles.backdropOn : ''}`}
+          onClick={() => setLogoutSheetOpen(false)}
+        />
+        <div
+          className={`${styles.sheet} ${logoutSheetOpen ? styles.sheetOn : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('nav.logout')}
+        >
+          <div className={styles.sheetHandle} />
+          <div className={styles.sheetHeader}>
+            <p className={styles.sheetTitle}>{t('logout_confirm_title')}</p>
+            <p className={styles.sheetEmail}>{user?.email}</p>
+          </div>
+          <div className={styles.sheetActions}>
+            <button
+              type="button"
+              className={styles.signOutBtn}
+              onClick={logout}
+            >
+              <FontAwesomeIcon icon={faRightFromBracket} aria-hidden="true" />
+              {t('nav.logout')}
+            </button>
+            <button
+              type="button"
+              className={styles.cancelBtn}
+              onClick={() => setLogoutSheetOpen(false)}
+            >
+              {t('cancel')}
+            </button>
+          </div>
+        </div>
+
       </div>
     </PullToRefreshContext.Provider>
   )

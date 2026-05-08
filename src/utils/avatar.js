@@ -1,3 +1,9 @@
+/** Converts an email address into a readable display name. */
+export function displayName(email) {
+  const local = (email ?? '').split('@')[0]
+  return local.split(/[._+]/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
+}
+
 const PALETTES = [
   { background: '#ede9fe', color: '#6d28d9' },
   { background: '#d1fae5', color: '#065f46' },

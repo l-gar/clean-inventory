@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowLeft,
@@ -271,6 +270,7 @@ export default function AddItem() {
 
   async function startScan() {
     setScanStatus('scanning')
+    const { BrowserMultiFormatReader, NotFoundException } = await import('@zxing/library')
     const reader = new BrowserMultiFormatReader()
     readerRef.current = reader
 
