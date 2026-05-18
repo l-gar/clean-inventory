@@ -26,7 +26,7 @@ function itemToForm(item) {
     location:             item.location_id         ?? item.locationId      ?? '',
     quantity:             String(item.quantity      ?? ''),
     unit:                 item.unit                ?? 'each',
-    itemLowStockThreshold: String(item.item_low_stock_threshold ?? item.itemLowStockThreshold ?? item.minQuantity ?? item.min_quantity ?? (item.lowStockThreshold || '')),
+    itemLowStockThreshold: String(item.item_low_stock_threshold ?? item.itemLowStockThreshold ?? item.minQuantity ?? item.min_quantity ?? (item.lowStockThreshold ?? '')),
     costPerUnit:          String(item.cost_per_unit ?? item.costPerUnit ?? item.resolvedCost ?? ''),
     costPerUnitOverride:  String(item.cost_per_unit_override ?? item.costPerUnitOverride ?? ''),
     expectedJobs:         String(item.expected_jobs ?? item.expectedJobs ?? ''),
@@ -326,8 +326,8 @@ export default function EditItem() {
           onCorrectionNoteChange={setAdjustNote}
         />
 
-        {/* ── Catalog — owner only ────────────────────────────── */}
-        {isOwner && form && (
+        {/* ── Catalog — owner / manager only ─────────────────── */}
+        {canEditAll && form && (
           <div className={styles.detailsCard}>
             <div className={styles.detailsHeader}>
               <FontAwesomeIcon icon={faTag} className={styles.detailsIcon} aria-hidden="true" />

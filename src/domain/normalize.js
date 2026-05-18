@@ -66,11 +66,7 @@ export function normalizeItem(raw) {
     unit:              raw.unit        ?? '',
     location_id:       raw.location_id ?? raw.locationId ?? '',
     location_name:     raw.location_name ?? raw.locationName ?? '',
-    lowStockThreshold: Number(
-      raw.item_low_stock_threshold ?? raw.itemLowStockThreshold ??
-      raw.lowStockThreshold        ??
-      raw.minQuantity              ?? raw.min_quantity           ?? 0
-    ),
+    lowStockThreshold: nullableNum(raw, 'item_low_stock_threshold', 'itemLowStockThreshold', 'lowStockThreshold', 'minQuantity', 'min_quantity'),
     track_stock:       parseTrackStock(raw.track_stock ?? raw.trackStock),
     reorder_point:     Number(raw.reorder_point ?? raw.reorderPoint ?? 0),
     reorderQuantity:          nullableNum(raw, 'reorder_quantity', 'reorderQuantity'),

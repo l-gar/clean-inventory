@@ -58,7 +58,7 @@
   "current_qty": "Cantidad Actual",
   "unit": "Unidad",
   "alert_below": "Alerta a/bajo",
-  "alert_below_tip": "Se activa una alerta de stock bajo cuando la cantidad cae a o por debajo de este número.",
+  "alert_below_tip": "Se activa una alerta de stock bajo cuando la cantidad cae a o por debajo de este número. Establece en 0 para alertar solo cuando se agote completamente.",
   "cost_per_unit": "Costo por Unidad",
   "cost_per_unit_placeholder": "ej. 4.99",
   "cost_per_unit_override": "Costo",

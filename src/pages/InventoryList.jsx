@@ -590,7 +590,7 @@ export default function InventoryList() {
         {/* Item list */}
         {filtered.map((item) => {
           const qty = Number(item.quantity ?? 0)
-          const itemThreshold = item.lowStockThreshold || threshold
+          const itemThreshold = item.lowStockThreshold ?? threshold
           const isOut = qty === 0
           const isLow = item.track_stock && !isOut && qty <= itemThreshold
           const tone = getCategoryTone(item.category)

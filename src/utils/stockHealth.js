@@ -3,8 +3,8 @@
  * Item-level threshold takes precedence; falls back to org percentage applied to target qty.
  */
 export function effectiveThreshold(item, orgThresholdPct) {
-  const itemThreshold = Number(item.lowStockThreshold ?? 0)
-  if (itemThreshold > 0) return itemThreshold
+  const raw = item.lowStockThreshold
+  if (raw !== null && raw !== undefined) return Number(raw)
   const pct = Number(orgThresholdPct ?? 0)
   if (pct <= 0) return 0
   const targetQty = Number(item.resolvedTargetQty ?? item.targetQuantity ?? 0) || 100

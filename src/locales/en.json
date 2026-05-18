@@ -58,7 +58,7 @@
   "current_qty": "Current Qty",
   "unit": "Unit",
   "alert_below": "Alert at/under",
-  "alert_below_tip": "A low-stock alert is triggered when quantity drops at or below this number.",
+  "alert_below_tip": "A low-stock alert is triggered when quantity drops at or below this number. Set to 0 to alert only when completely out of stock.",
   "cost_per_unit": "Cost per Unit",
   "cost_per_unit_placeholder": "e.g. 4.99",
   "cost_per_unit_override": "Cost Override",
