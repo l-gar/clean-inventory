@@ -252,6 +252,32 @@
   text-overflow: ellipsis;
 }
 
+.itemNameBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1.5px;
+  transition: text-decoration-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 0;
+}
+
+.itemNameBtn:hover,
+.itemNameBtn:active {
+  text-decoration-color: var(--gray-900);
+}
+
 .locationRow {
   display: flex;
   align-items: center;

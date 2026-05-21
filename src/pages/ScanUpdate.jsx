@@ -394,7 +394,7 @@ export default function AddItem() {
         })
         await apiAddStock({
           email: user.email, orgId: user.orgId,
-          catalogId:             catalogRes.catalogId,
+          catalogId:             catalogRes.catalogId ?? catalogRes.catalog_id,
           locationId:            form.location,
           quantity:              submitQty,
           itemLowStockThreshold: form.itemLowStockThreshold,

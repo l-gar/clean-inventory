@@ -146,48 +146,40 @@ export default function EditItem() {
         })
       }
 
-      // Catalog metadata — owner / manager only
-      if (canEditAll && catalogId) {
-        await apiUpdateCatalogItem({
-          email: user.email, orgId: user.orgId, catalogId,
-          itemName:    form.name,
-          brand:       form.brand,
-          supplier:    form.supplier,
-          barcode:     form.sku,
-          description: form.description,
-          category:    form.category,
-          unit:        form.unit,
-          trackStock:  form.trackStock,
-          ...(isOwner ? {
-            targetQuantity:   form.targetQuantity,
-            restockCycleDays: form.restockCycleDays,
-            reorderPoint:     form.reorderPoint,
-            reorderQuantity:  form.reorderQuantity,
-          } : {}),
-        })
-      }
-
-      // Stock metadata — owner / manager only
-      if (canEditAll && stockId) {
-        await apiUpdateStock({
-          email: user.email, orgId: user.orgId, stockId,
-          locationId:            form.location,
-          itemLowStockThreshold: form.itemLowStockThreshold,
-          costPerUnitOverride:   form.costPerUnitOverride,
-          expectedJobs:          form.expectedJobs,
-          targetQuantityOverride:   form.targetQuantityOverride,
-          restockCycleDaysOverride: form.restockCycleDaysOverride,
-        })
-      }
+      // Catalog + stock metadata in parallel — both are independent of each other
+      const writes = []
+      if (canEditAll && catalogId) writes.push(apiUpdateCatalogItem({
+        email: user.email, orgId: user.orgId, catalogId,
+        itemName:         form.name,
+        brand:            form.brand,
+        supplier:         form.supplier,
+        barcode:          form.sku,
+        description:      form.description,
+        category:         form.category,
+        unit:             form.unit,
+        trackStock:       form.trackStock,
+        targetQuantity:   form.targetQuantity,
+        restockCycleDays: form.restockCycleDays,
+        reorderPoint:     form.reorderPoint,
+        reorderQuantity:  form.reorderQuantity,
+      }))
+      if (canEditAll && stockId) writes.push(apiUpdateStock({
+        email: user.email, orgId: user.orgId, stockId,
+        locationId:               form.location,
+        itemLowStockThreshold:    form.itemLowStockThreshold,
+        costPerUnitOverride:      form.costPerUnitOverride,
+        expectedJobs:             form.expectedJobs,
+        targetQuantityOverride:   form.targetQuantityOverride,
+        restockCycleDaysOverride: form.restockCycleDaysOverride,
+      }))
+      if (writes.length) await Promise.all(writes)
 
       invalidateInventory()
       if (canEditAll) invalidateCatalog()
+      // Kick off background refetches — do not block navigation on them
+      fetchInventory(user.email, user.orgId, inventoryLocationId ?? 'all').catch(() => {})
+      if (canEditAll) fetchCatalog(user.email, user.orgId).catch(() => {})
       setSaveSuccess(true)
-      // Await fresh data so InventoryList doesn't seed from stale store on navigate
-      await Promise.allSettled([
-        fetchInventory(user.email, user.orgId, inventoryLocationId ?? 'all'),
-        canEditAll ? fetchCatalog(user.email, user.orgId) : Promise.resolve(),
-      ])
       setTimeout(() => navigate('/inventory'), 1500)
     } catch (err) {
       setSaveError(err?.message || t('edit_item_save_error'))
@@ -368,8 +360,8 @@ export default function EditItem() {
           </div>
         )}
 
-        {/* ── Health targets — owner only ──────────────────────── */}
-        {isOwner && form && (
+        {/* ── Health targets — owner / manager only ───────────── */}
+        {canEditAll && form && (
           <div className={styles.detailsCard}>
             <div className={styles.detailsHeader}>
               <FontAwesomeIcon icon={faHeartPulse} className={styles.detailsIcon} aria-hidden="true" />

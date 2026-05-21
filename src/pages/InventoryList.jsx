@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { usePullToRefresh } from '../hooks/usePullToRefresh'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowsRotate,
@@ -96,6 +96,7 @@ function RefreshIcon({ spinning }) {
 export default function InventoryList() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { state: navState } = useLocation()
 
   const isOwner  = user?.role === 'org_owner'
   const isManager = user?.role === 'manager'
@@ -113,7 +114,10 @@ export default function InventoryList() {
   const storeInventoryLocationId = useStore((s) => s.inventoryLocationId)
   const getLocationName          = useStore((s) => s.getLocationName)
 
-  const fetchSerialRef = useRef(0)
+  const fetchSerialRef  = useRef(0)
+  const itemRefs        = useRef({})
+  const scrolledRef     = useRef(false)
+  const highlightStockId = navState?.highlightStockId ?? null
 
   // ── Location filter state ─────────────────────────────────────────────────
   // availableLocations: [{location_id, location_name}] used to render tabs
@@ -169,6 +173,7 @@ export default function InventoryList() {
   // org_owner / manager → last-viewed session location → saved default → 'all'
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialLocationId = useMemo(() => {
+    if (!isMember && navState?.locationId) return navState.locationId
     if (isMember) {
       const assigned = (user?.assignedLocations ?? user?.locationIds ?? user?.assigned_locations ?? []).map(normalizeLocation)
       if (assigned.length > 0) {
@@ -227,6 +232,13 @@ export default function InventoryList() {
     setItems(storeInventory)
   }, [storeInventory, storeInventoryLoading, storeInventoryLocationId, selectedLocationId])
 
+  useEffect(() => {
+    if (!highlightStockId || scrolledRef.current) return
+    const el = itemRefs.current[highlightStockId]
+    if (!el) return
+    scrolledRef.current = true
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [items, highlightStockId])
 
   function openTransfer(item) {
     const dests = availableLocations.filter((l) => l.location_id !== item.location_id)
@@ -605,7 +617,8 @@ export default function InventoryList() {
           return (
             <div
               key={item.itemId}
-              className={`${styles.item} ${isOut ? styles.itemOut : isLow ? styles.itemLow : ''}`}
+              ref={el => { if (el) itemRefs.current[item.itemId] = el }}
+              className={`${styles.item} ${isOut ? styles.itemOut : isLow ? styles.itemLow : ''}${item.itemId === highlightStockId ? ` ${styles.itemHighlight}` : ''}`}
             >
               <div className={`${styles.itemStripe} ${isOut ? styles.itemStripeOut : isLow ? styles.itemStripeLow : ''}`} />
 

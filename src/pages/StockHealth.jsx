@@ -80,6 +80,8 @@ function Section({ tier, items, icon, label, orgThreshold, collapsed, onToggle }
 
 function ItemCard({ item, tier, orgThreshold }) {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const qty = Number(item.quantity)
   const threshold = effectiveThreshold(item, orgThreshold)
   const rp = Number(item.reorder_point ?? 0)
@@ -88,11 +90,17 @@ function ItemCard({ item, tier, orgThreshold }) {
   const health = computeStockHealth(item)
   const hasExtra = health.daysRemaining !== null || health.projectedStockoutDate !== null || health.urgency
 
+  function handleNameClick() {
+    navigate('/inventory', { state: { highlightStockId: item.itemId, locationId: item.location_id } })
+  }
+
   return (
     <div className={`${styles.itemCard} ${styles[`card_${tier}`]}`}>
       <div className={styles.cardTop}>
         <div className={styles.cardNameGroup}>
-          <p className={styles.itemName}>{item.itemName}</p>
+          <button type="button" className={styles.itemNameBtn} onClick={handleNameClick}>
+            {item.itemName}
+          </button>
           {locationName && (
             <div className={styles.locationRow}>
               <FontAwesomeIcon icon={faLocationDot} className={styles.pinIcon} aria-hidden="true" />
