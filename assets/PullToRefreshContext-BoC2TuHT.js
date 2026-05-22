@@ -1,1 +1,0 @@
-import{F as e,L as t}from"./AuthContext-B8tRC_OF.js";var n=(0,t(e(),1).createContext)({register:()=>{}});export{n as t};
