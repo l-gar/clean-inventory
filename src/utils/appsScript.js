@@ -64,7 +64,7 @@
  *   getActivityLog        { email, orgId, locationId }  locationId can be 'all'
  *
  * Barcode proxy
- *   lookupBarcode         { upc }
+ *   lookupBarcode         { upc, email, orgId, locationId }
  *
  * Admin only
  *   getPending            { email }
