@@ -226,24 +226,29 @@ export default function AddItem() {
     }
 
     try {
-      const data = await callAppsScript('lookupBarcode', { upc: padded })
+      const data = await callAppsScript('lookupBarcode', { upc: padded, email: user.email, orgId: user.orgId, locationId: lookupLocation || '' })
 
-      if (data?.existsInInventory && data?.itemId) {
-        const inSelectedLoc = !lookupLocation || !data.location_id || data.location_id === lookupLocation
-        if (inSelectedLoc) {
+      if (data?.existsInInventory) {
+        const stockId = data.stockId ?? data.itemId ?? null
+        const inSelectedLoc = !lookupLocation || !data.locationId || data.locationId === lookupLocation
+        if (inSelectedLoc && stockId) {
           setLookingUp(false)
-          navigate(`/edit/${data.itemId}`, { state: { item: data } })
+          navigate(`/edit/${stockId}`, { state: { item: data } })
           return
         }
         setForm((prev) => ({
           ...prev,
-          sku:      code,
-          name:     data.itemName ?? data.title ?? '',
-          brand:    data.brand ?? '',
-          category: data.category ?? prev.category,
-          unit:     data.unit ?? prev.unit,
-          location: lookupLocation || prev.location,
+          sku:         code,
+          name:        data.name ?? data.itemName ?? data.title ?? '',
+          brand:       data.brand ?? '',
+          category:    data.category ?? prev.category,
+          unit:        data.unit ?? prev.unit,
+          location:    lookupLocation || prev.location,
+          costPerUnit: String(data.costPerUnit ?? ''),
         }))
+        setBaseQty(Number(data.quantity ?? 0))
+        setMatchedItemId(stockId)
+        setMatchedCatalogId(data.catalogId ?? null)
         setIsKnownItem(true)
         setLookingUp(false)
         setPhase('new_item')
